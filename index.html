@@ -1,0 +1,2552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>K-MATE (Global Smart Citizen Portal)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Leaflet Map CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Google Fonts (Noto Sans for multilang support) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Sans+Thai:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans TC', 'Noto Sans Thai', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .slide-up {
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        /* Custom scrollbar for beautiful language selection */
+        .custom-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        /* Map custom container height */
+        #map-container {
+            height: calc(100% - 130px);
+        }
+        /* Fix leaflet index z-index conflicts */
+        .leaflet-top, .leaflet-bottom {
+            z-index: 5 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between antialiased selection:bg-blue-500 selection:text-white">
+
+    <div id="app" class="max-w-md w-full mx-auto bg-white min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
+        
+        <!-- ==================== [SCREEN 1] 언어 선택 화면 (Language Selection) ==================== -->
+        <div id="lang-screen" class="flex-1 flex flex-col justify-between p-6 h-screen overflow-y-auto">
+            <div class="text-center space-y-3 pt-4 pb-4">
+                <div class="inline-flex p-3.5 bg-blue-50 text-blue-600 rounded-2xl mb-1 animate-bounce">
+                    <i data-lucide="globe" class="w-10 h-10"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900">Select Language</h1>
+                <p class="text-xs text-slate-500">원하시는 언어를 선택해 주세요.</p>
+            </div>
+
+            <!-- 언어 목록 그리드 -->
+            <div class="flex-1 overflow-y-auto custom-scroll pr-1 mb-6 space-y-2 max-h-[60vh]">
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="selectLanguage('ko')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇰🇷</span>
+                        <span class="font-bold text-xs text-slate-700">한국어</span>
+                    </button>
+                    <button onclick="selectLanguage('en')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇺🇸</span>
+                        <span class="font-bold text-xs text-slate-700">English</span>
+                    </button>
+                    <button onclick="selectLanguage('ja')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇯🇵</span>
+                        <span class="font-bold text-xs text-slate-700">日本語</span>
+                    </button>
+                    <button onclick="selectLanguage('zh')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇨🇳</span>
+                        <span class="font-bold text-xs text-slate-700">简体中文</span>
+                    </button>
+                    <button onclick="selectLanguage('zt')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇹🇼</span>
+                        <span class="font-bold text-xs text-slate-700">繁體中文</span>
+                    </button>
+                    <button onclick="selectLanguage('vi')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇻🇳</span>
+                        <span class="font-bold text-xs text-slate-700">Tiếng Việt</span>
+                    </button>
+                    <button onclick="selectLanguage('th')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇹🇭</span>
+                        <span class="font-bold text-xs text-slate-700">ภาษาไทย</span>
+                    </button>
+                    <button onclick="selectLanguage('ms')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇲🇾</span>
+                        <span class="font-bold text-[11px] text-slate-700 leading-none">B. Melayu</span>
+                    </button>
+                    <button onclick="selectLanguage('id')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇮🇩</span>
+                        <span class="font-bold text-[11px] text-slate-700 leading-none">B. Indonesia</span>
+                    </button>
+                    <button onclick="selectLanguage('fil')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇵🇭</span>
+                        <span class="font-bold text-xs text-slate-700">Tagalog</span>
+                    </button>
+                    <button onclick="selectLanguage('ru')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇷🇺</span>
+                        <span class="font-bold text-xs text-slate-700">Русский</span>
+                    </button>
+                    <button onclick="selectLanguage('mn')" class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all active:scale-95 duration-150 text-left">
+                        <span class="text-2xl">🇲🇳</span>
+                        <span class="font-bold text-xs text-slate-700">Монгол</span>
+                    </button>
+                </div>
+            </div>
+            <div class="text-center text-[10px] text-slate-400 pb-2">
+                K-MATE Global Portal © 2026
+            </div>
+        </div>
+
+        <!-- ==================== [SCREEN 2] 메인 대시보드 화면 ==================== -->
+        <div id="main-screen" class="hidden flex-1 flex flex-col bg-slate-50 overflow-y-auto">
+            <!-- 상단 헤더 -->
+            <header class="bg-white border-b border-slate-100 px-5 py-4 flex items-center justify-between sticky top-0 z-10">
+                <div class="flex items-center space-x-2.5">
+                    <div class="p-1.5 bg-blue-600 rounded-lg text-white">
+                        <i data-lucide="building-2" class="w-5 h-5"></i>
+                    </div>
+                    <span class="font-bold text-slate-900 tracking-tight text-lg" data-translate="app_title">K-MATE</span>
+                </div>
+                <!-- 현재 선택 언어 뱃지 및 변경 -->
+                <button onclick="goToLanguageSelect()" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition-colors text-xs font-semibold">
+                    <i data-lucide="globe-2" class="w-3.5 h-3.5 text-blue-500"></i>
+                    <span id="current-lang-badge">한국어</span>
+                </button>
+            </header>
+
+            <!-- 퀵 요약 배너 -->
+            <div class="px-5 pt-4">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 text-white shadow-md relative overflow-hidden">
+                    <div class="absolute right-[-10px] bottom-[-10px] text-white/10">
+                        <i data-lucide="heart" class="w-28 h-28"></i>
+                    </div>
+                    <p class="text-xs text-white/80 font-medium tracking-wide uppercase" data-translate="welcome">스마트 생활 도우미</p>
+                    <h2 class="text-lg font-bold mt-1" data-translate="welcome_subtitle">오늘도 안전하고 편리하게!</h2>
+                </div>
+            </div>
+
+            <!-- 메인 메뉴 그리드 (4개 버튼: 내비, 결제, 대중교통, 민원신고 순서대로 배치) -->
+            <div class="flex-1 p-5 space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- 1. 내비게이션 (왼쪽 위) -->
+                    <button onclick="openMockScreen('nav')" class="aspect-[1.05/1] bg-white hover:bg-blue-50/20 border border-slate-100 p-4 rounded-2xl flex flex-col justify-between text-left transition-all hover:shadow-lg active:scale-[0.98] group">
+                        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <i data-lucide="navigation" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base" data-translate="menu_nav">내비게이션</h3>
+                            <p class="text-[11px] text-slate-400 mt-1" data-translate="menu_nav_desc">실시간 GPS 최적 경로</p>
+                        </div>
+                    </button>
+
+                    <!-- 2. 결제 (오른쪽 위) -->
+                    <button onclick="openMockScreen('pay')" class="aspect-[1.05/1] bg-white hover:bg-blue-50/20 border border-slate-100 p-4 rounded-2xl flex flex-col justify-between text-left transition-all hover:shadow-lg active:scale-[0.98] group">
+                        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <i data-lucide="wallet" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base" data-translate="menu_pay">페이 및 결제</h3>
+                            <p class="text-[11px] text-slate-400 mt-1" id="dash-pay-desc">잔액: ₩ 48,250</p>
+                        </div>
+                    </button>
+
+                    <!-- 3. 대중교통 (왼쪽 아래) -->
+                    <button onclick="openMockScreen('transit')" class="aspect-[1.05/1] bg-white hover:bg-blue-50/20 border border-slate-100 p-4 rounded-2xl flex flex-col justify-between text-left transition-all hover:shadow-lg active:scale-[0.98] group">
+                        <div class="p-3 bg-amber-50 text-amber-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <i data-lucide="bus-front" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base" data-translate="menu_transit">대중교통 안내</h3>
+                            <p class="text-[11px] text-slate-400 mt-1" data-translate="menu_transit_desc">실시간 도착 최신 정보</p>
+                        </div>
+                    </button>
+
+                    <!-- 4. 민원신고 (오른쪽 아래) -->
+                    <button id="complain-btn" onclick="toggleComplaintMenu()" class="aspect-[1.05/1] bg-white border border-slate-100 p-4 rounded-2xl flex flex-col justify-between text-left transition-all duration-300 hover:shadow-lg active:scale-[0.98] group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-blue-50/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="p-3 bg-red-50 text-red-500 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                        </div>
+                        <div class="flex items-center justify-between w-full">
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-base" data-translate="menu_complain">민원 신고</h3>
+                                <p class="text-[11px] text-slate-400 mt-1" data-translate="menu_complain_desc">신속한 행정 서비스</p>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- ==================== [SUB-MENU] 민원신고 하위 메뉴 ==================== -->
+                <div id="complaint-sub-menu" class="hidden space-y-3 slide-up pb-4">
+                    <div class="flex items-center justify-between px-1">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider" data-translate="sub_menu_title">민원신고 상세 메뉴</span>
+                        <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping"></span>
+                    </div>
+                    
+                    <div class="flex flex-col space-y-3">
+                        <!-- 위쪽: 간편 민원 신고 -->
+                        <button onclick="openEasyComplaintForm()" class="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white p-4 rounded-xl flex items-center justify-between shadow-md transition-all transform active:scale-[0.99] group">
+                            <div class="flex items-center space-x-3">
+                                <div class="p-2 bg-white/20 rounded-lg">
+                                    <i data-lucide="edit-3" class="w-5 h-5"></i>
+                                </div>
+                                <div class="text-left">
+                                    <p class="font-bold text-sm tracking-wide" data-translate="sub_easy_report">간편 민원 신고</p>
+                                    <p class="text-[10px] text-white/80" data-translate="sub_easy_report_desc">사진과 내용으로 빠른 민원 등록</p>
+                                </div>
+                            </div>
+                            <i data-lucide="arrow-right" class="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+
+                        <!-- 아래쪽: 민원 처리 현황 -->
+                        <button onclick="openComplaintStatus()" class="w-full bg-slate-800 hover:bg-slate-900 text-white p-4 rounded-xl flex items-center justify-between shadow-md transition-all transform active:scale-[0.99] group">
+                            <div class="flex items-center space-x-3">
+                                <div class="p-2 bg-white/10 rounded-lg">
+                                    <i data-lucide="activity" class="w-5 h-5 text-amber-400"></i>
+                                </div>
+                                <div class="text-left">
+                                    <p class="font-bold text-sm tracking-wide" data-translate="sub_report_status">민원 처리 현황</p>
+                                    <p class="text-[10px] text-slate-400" data-translate="sub_report_status_desc">나의 민원 진행 및 조치 결과 확인</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="bg-red-500 text-[10px] text-white px-2 py-0.5 rounded-full font-bold" id="badge-count">1</span>
+                                <i data-lucide="arrow-right" class="w-5 h-5 text-white/60 group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 모의 긴급 버튼 핫라인 -->
+            <div class="p-5 pt-0 mt-auto">
+                <a href="tel:112" class="w-full bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center space-x-2 py-3 rounded-xl transition-colors font-semibold text-xs border border-red-100">
+                    <i data-lucide="phone-call" class="w-4 h-4"></i>
+                    <span data-translate="emergency_hotline">비상 긴급 연락망 (112)</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- ==================== [SUB-SCREEN] 간편 민원 신고 접수 폼 ==================== -->
+        <div id="easy-complaint-screen" class="hidden flex-1 flex flex-col bg-slate-50 overflow-y-auto">
+            <header class="bg-white border-b border-slate-100 px-5 py-4 flex items-center justify-between">
+                <button onclick="backToDashboard()" class="p-1 hover:bg-slate-100 rounded-lg text-slate-600">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <span class="font-bold text-slate-900" data-translate="sub_easy_report">간편 민원 신고</span>
+                <span class="w-7"></span>
+            </header>
+
+            <form id="complaint-form" onsubmit="submitComplaint(event)" class="flex-1 p-5 flex flex-col justify-between">
+                <div class="space-y-4">
+                    <!-- 카테고리 -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2" data-translate="form_category">민원 카테고리</label>
+                        <select id="comp-category" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none text-slate-700">
+                            <option value="도로/교통" data-translate="cat_road">도로 및 교통 파손</option>
+                            <option value="환경/위생" data-translate="cat_env">쓰레기/환경 위생 문제</option>
+                            <option value="안전/재해" data-translate="cat_safety">가로등 고장/안전 위험요소</option>
+                            <option value="기타" data-translate="cat_etc">기타 단순 건의사항</option>
+                        </select>
+                    </div>
+
+                    <!-- 위치 입력 -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2" data-translate="form_location">발생 위치</label>
+                        <div class="relative">
+                            <input type="text" id="comp-location" required class="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none" placeholder="예: 시청로 123 앞 인도">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-slate-400 absolute left-3 top-3.5"></i>
+                        </div>
+                    </div>
+
+                    <!-- 내용 기입 -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2" data-translate="form_desc">상세 내용</label>
+                        <textarea id="comp-desc" required rows="4" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm outline-none resize-none" placeholder="내용을 자세히 설명해 주시면 빠른 처리가 가능합니다."></textarea>
+                    </div>
+
+                    <!-- 모의 파일 업로드 -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2" data-translate="form_photo">현장 사진 첨부</label>
+                        <div class="border-2 border-dashed border-slate-200 hover:border-blue-500 transition-colors bg-white rounded-xl p-4 text-center cursor-pointer relative" onclick="triggerMockPhoto()">
+                            <input type="file" id="comp-file" class="hidden" accept="image/*" onchange="previewImage(event)">
+                            <div id="photo-placeholder" class="space-y-1">
+                                <i data-lucide="camera" class="w-6 h-6 text-slate-400 mx-auto"></i>
+                                <p class="text-xs text-slate-500 font-medium" data-translate="form_photo_upload">탭하여 사진 찍기 또는 업로드</p>
+                                <p class="text-[10px] text-slate-400" data-translate="form_photo_limit">JPG, PNG (최대 10MB)</p>
+                            </div>
+                            <!-- 이미지 미리보기 -->
+                            <div id="photo-preview-container" class="hidden flex items-center justify-center relative">
+                                <img id="photo-preview" src="#" alt="미리보기" class="max-h-28 rounded-lg shadow-sm border border-slate-100">
+                                <button type="button" onclick="clearPreview(event)" class="absolute top-1 right-1 bg-slate-800 text-white rounded-full p-1 hover:bg-red-500 transition-colors">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-md transition-all transform active:scale-95 mt-6" data-translate="btn_submit">
+                    민원 신청서 제출하기
+                </button>
+            </form>
+        </div>
+
+        <!-- ==================== [SUB-SCREEN] 민원 처리 현황 화면 ==================== -->
+        <div id="status-complaint-screen" class="hidden flex-1 flex flex-col bg-slate-50 overflow-y-auto">
+            <header class="bg-white border-b border-slate-100 px-5 py-4 flex items-center justify-between">
+                <button onclick="backToDashboard()" class="p-1 hover:bg-slate-100 rounded-lg text-slate-600">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <span class="font-bold text-slate-900" data-translate="sub_report_status">민원 처리 현황</span>
+                <span class="w-7"></span>
+            </header>
+
+            <div class="flex-1 p-4 space-y-3 animate-fade-in" id="complaint-list">
+                <!-- 동적으로 추가될 예정 -->
+            </div>
+        </div>
+
+        <!-- ==================== [MOCK-SCREENS] 내비, 결제, 대중교통 모의 서비스 화면 ==================== -->
+        <div id="mock-screen" class="hidden flex-1 flex flex-col bg-white">
+            <header class="bg-white border-b border-slate-100 px-5 py-4 flex items-center justify-between z-10 shadow-sm">
+                <button onclick="backToDashboard()" class="p-1 hover:bg-slate-100 rounded-lg text-slate-600">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <span class="font-bold text-slate-900" id="mock-title">모의 서비스</span>
+                <span class="w-7"></span>
+            </header>
+            
+            <div id="mock-content" class="flex-1 relative flex flex-col overflow-hidden">
+                <!-- 동적으로 대형 맵 또는 페이 컨텐트 주입 -->
+            </div>
+        </div>
+
+        <!-- ==================== [충전 모달 바텀 시트] (실제 금액 충전 지원) ==================== -->
+        <div id="recharge-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-end justify-center transition-all duration-300">
+            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 space-y-5 slide-up shadow-2xl">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-base font-bold text-slate-900" data-translate="pay_recharge_title">페이 잔액 충전</h3>
+                    <button onclick="closeRechargeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- 프리셋 충전 버튼 목록 -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button onclick="addPresetAmount(5000)" class="py-2.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold rounded-xl border border-slate-100 transition-colors">
+                            + ₩ 5,000
+                        </button>
+                        <button onclick="addPresetAmount(10000)" class="py-2.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold rounded-xl border border-slate-100 transition-colors">
+                            + ₩ 10,000
+                        </button>
+                        <button onclick="addPresetAmount(30000)" class="py-2.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold rounded-xl border border-slate-100 transition-colors">
+                            + ₩ 30,000
+                        </button>
+                        <button onclick="addPresetAmount(50000)" class="py-2.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-bold rounded-xl border border-slate-100 transition-colors">
+                            + ₩ 50,000
+                        </button>
+                    </div>
+
+                    <!-- 직접 입력 폼 -->
+                    <div class="space-y-1.5">
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider" data-translate="pay_recharge_custom">직접 입력 (₩)</label>
+                        <input type="number" id="recharge-custom-input" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm font-black outline-none text-slate-800" placeholder="1000" min="1000">
+                    </div>
+                </div>
+
+                <button onclick="executeRecharge()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold text-xs shadow-md transition-all transform active:scale-95 flex items-center justify-center space-x-2">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span data-translate="pay_recharge_btn_confirm">충전 완료</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== [GPS 비활성 수동 선택 모달] ==================== -->
+        <div id="gps-option-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-5 transition-all duration-300">
+            <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-4 slide-up shadow-2xl">
+                <div class="flex items-center space-x-3 text-amber-500">
+                    <div class="p-2 bg-amber-50 rounded-xl">
+                        <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900" data-translate="gps_modal_title">GPS 연결이 어렵습니다</h3>
+                        <p class="text-[10px] text-slate-400" data-translate="gps_modal_reason">아이프레임 보안 제한 및 네트워크 문제</p>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 leading-relaxed font-medium" data-translate="gps_modal_desc">
+                    보안 샌드박스 내부 환경으로 인하여 실제 위성 GPS 권한이 차단될 수 있습니다. 아래 버튼을 눌러 <b>가상 GPS 위치(경기도 수원시청)</b>를 활성화하거나 다시 시도해보세요.
+                </p>
+
+                <div class="flex flex-col space-y-2 pt-1">
+                    <!-- 가상 모드 작동 -->
+                    <button onclick="activateVirtualGPS()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-xs font-bold shadow-md transition-all transform active:scale-95 flex items-center justify-center space-x-2">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span data-translate="gps_virtual_btn">가상 GPS 위치 연결 (수원시청)</span>
+                    </button>
+                    <!-- 재시도 -->
+                    <button onclick="retryRealGPS()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl text-xs font-bold transition-all transform active:scale-95 flex items-center justify-center space-x-2">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        <span data-translate="gps_retry_btn">실제 GPS 다시 시도</span>
+                    </button>
+                    <!-- 닫기 -->
+                    <button onclick="closeGPSModal()" class="w-full py-2 text-slate-400 hover:text-slate-600 text-xs font-bold transition-colors">
+                        <span data-translate="gps_close_btn">닫기</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== [TOAST] 커스텀 알림 토스트 ==================== -->
+        <div id="toast" class="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2 opacity-0 pointer-events-none transition-opacity duration-300 z-[250] min-w-[200px] justify-center">
+            <i data-lucide="info" class="w-4 h-4 text-blue-400" id="toast-icon"></i>
+            <span id="toast-msg">메시지가 표시됩니다.</span>
+        </div>
+
+    </div>
+
+    <!-- ========================================== JavaScript 로직 ========================================== -->
+    <script>
+        // 전역 상태 변수
+        let currentLang = 'ko';
+        let isComplaintSubMenuOpen = false;
+        let navMap = null;
+        let startMarker = null;
+        let destMarker = null;
+        let routeLine = null;
+
+        // 실제 충전 가능한 동적 잔액 관리 변수
+        let payBalance = 48250;
+
+        // 유연한 출발 좌표 (기본값: 서울역)
+        let START_COORDS = [37.5545, 126.9708];
+
+        // 다국어 화면 전환 복귀를 위한 화면 기억 상태 변수
+        let previousScreen = 'main'; // 'main', 'easy-complaint', 'status-complaint', 'mock'
+        let activeService = null;   // 'nav', 'pay', 'transit'
+
+        // 내비게이션 상태 영구 유지를 위한 변수
+        let lastSearchedDest = null; // { name, lat, lon }
+        let transitSearchQuery = ""; // 대중교통 검색어 세션 기억
+
+        // 🌟 오류 원인이 된 누락 민원 데이터 변수(complaints) 복구 완료 🌟
+        let complaints = [
+            {
+                id: 'CIV-2026-003',
+                category: '도로/교통',
+                location: {
+                    ko: '중앙로역 3번출구 앞 사거리 인도',
+                    en: 'Crosswalk in front of Jungangno Station, Exit 3',
+                    ja: '中央路駅3番出口前の交差点の歩道',
+                    zh: '中央路地铁站3号出口前十字路口人行道',
+                    zt: '中央路地鐵站3號出口前十字路口人行道',
+                    vi: 'Lối đi bộ tại ngã tư trước Cổng 3 Ga Jungangno',
+                    th: 'ทางเท้าบริเวณสี่แยก หน้าทางออก 3 สถานี중앙로',
+                    ms: 'Laluan pejalan kaki di persimpangan hadapan Pintu Keluar 3 Stesen Jungangno',
+                    id: 'Trotoar di persimpangan depan Stasiun Jungangno Pintu Keluar 3',
+                    fil: 'Tawiran sa harap ng Jungangno Station Exit 3',
+                    ru: 'Пешеходный переход перед выходом 3 станции Джунгангно',
+                    mn: 'Жунгүүнну өртөөний 3-р гарцын урд талын явган хүний зам'
+                },
+                desc: {
+                    ko: '보도블럭 싱크홀로 인해 보행자들이 걸려 넘어질 위험이 매우 큽니다. 빠른 보수 부탁드립니다.',
+                    en: 'There is a high risk of pedestrians tripping due to a sinkhole on the sidewalk. Please repair it quickly.',
+                    ja: '歩道のシンкホール（陥没）のせいで、歩行者がつまずいて転ぶ危険性が非常に高いです。早急な補修をお願いします。',
+                    zh: '人行道上出现塌陷（天坑），行人员极易绊倒摔伤，请尽快维修。',
+                    zt: '人行道上出現塌陷（天坑），行人員極易絆倒摔傷，請儘快維修。',
+                    vi: 'Có nguy cơ cao người đi bộ bị vấp ngã do hố sụt trên vỉa hè. Xin vui lòng sửa chữa nhanh chóng.',
+                    th: 'มีอุบัติเหตุคนสะดุดล้มบ่อยครั้งเนื่องจากหลุมยุบบบนทางเท้า โปรดดำเนินการซ่อมแซมโดยด่วน',
+                    ms: 'Terdapat risiko tinggi pejalan kaki tersandung disebabkan lubang benam di laluan pejalan kaki. Sila baiki segera.',
+                    id: 'Ada risiko tinggi pejalan kaki tersandung akibat lubang amblas di trotoar. Mohon segera diperbaiki.',
+                    fil: 'Mataas ang panganib na madapa ang mga naglalakad dahil sa sinkhole sa bangketa. Pakikumpuni po agad.',
+                    ru: 'Высокий риск падения пешеходов из-за провала на тротуаре. Пожалуйста, отремонтируйте его как можно скорее.',
+                    mn: 'Явган хүний замын цөмрөлтөөс болж явган зорчигч бүдэрч унах аюул маш өндөр байна. Хурдан засаж өгнө үү.'
+                },
+                status: 'received',
+                date: '2026-07-03',
+                photo: null
+            },
+            {
+                id: 'CIV-2026-002',
+                category: '환경/위생',
+                location: {
+                    ko: '한빛공원 어린이놀이터 벤치 옆',
+                    en: "Next to the bench in Hanbit Park Children's Playground",
+                    ja: 'ハンビッ公園子供遊び場のベンチの横',
+                    zh: '韩光公园儿童游乐场长椅旁',
+                    zt: '韓光公園兒童遊樂场长椅旁',
+                    vi: 'Cạnh ghế băng tại sân chơi trẻ em Công viên Hanbit',
+                    th: 'ข้างม้านั่ง บริเวณสนามเด็กเล่นสวนสาธารณะฮันบิต',
+                    ms: 'Bersebelahan bangku di Taman Permainan Kanak-kanak Taman Hanbit',
+                    id: 'Di samping bangku Taman Bermain Anak Taman Hanbit',
+                    fil: "Katabi ng bench sa Hanbit Park Children's Playground",
+                    ru: 'Рядом со скамейкой на детской площадке парка Ханбит',
+                    mn: 'Ханбид цэцэрлэгт хүрээлэнгийн тоглоомын талбайн сандлын хажууд'
+                },
+                desc: {
+                    ko: '주말 이후 방치된 각종 생활 쓰레기가 불법 투기되어 악취가 발생하고 있습니다.',
+                    en: 'Various household wastes left abandoned since the weekend have been illegally dumped, causing bad odors.',
+                    ja: '週末以降、放置された様々な生活ゴミが不法投棄され、悪臭が発生しています。',
+                    zh: '周末过后，各种生活垃圾被非法倾倒并长期滞留，散发出阵阵恶臭。',
+                    zt: '週末過後，各種生活垃圾被非法傾倒並長期滯留，散發出陣陣惡臭。',
+                    vi: 'Nhiều loại rác thải sinh hoạt bị bỏ lại sau cuối tuần do vứt rác bừa bãi, gây ra mùi hôi thối.',
+                    th: 'ขยะในครัวเรือนถูกทิ้งอย่างผิดกฎหมายตั้งแต่ช่วงวันหยุดสุดสัปดาห์และไม่มีการเก็บกวาด ส่งกลิ่นเหม็นรบกวน',
+                    ms: 'Pelbagai sisa domestik yang terbiar sejak hujung minggu telah dibuang secara haram, menyebabkan bau busuk.',
+                    id: 'Berbagai sampah rumah tangga terbengkalai sejak akhir pekan akibat pembuangan liar, menimbulkan bau menyengat.',
+                    fil: "Iba't ibang basura na iniwan simula weekend ang iligal na tinapon, na nagdudulot ng mabahong amoy.",
+                    ru: 'Различный бытовой мусор, оставленный с выходных, был незаконно выброшен, что вызывает неприятный запах.',
+                    mn: 'Амралтын өдрүүдээс хойш хаягдсан ахуйн хог хаягдлыг хууль бусаар хаяж, эвгүй үнэр гарч байна.'
+                },
+                status: 'reviewing',
+                date: '2026-07-02',
+                photo: null
+            }
+        ];
+
+        // 대형 목적지 추천 랜드마크 데이터베이스
+        const landmarkNames = {
+            palace: { ko: "경복궁", en: "Gyeongbokgung Palace", ja: "景福宮", zh: "景福宫", zt: "景福宮", vi: "Cung Gyeongbok", th: "พระราชวังเคียงบก", ms: "Istana Gyeongbokgung", id: "Istana Gyeongbokgung", fil: "Gyeongbokgung Palace", ru: "Дворец Кёнбоккун", mn: "Гёнбокүн ордон" },
+            airport: { ko: "인천공항", en: "Incheon Airport", ja: "仁川空港", zh: "仁川机场", zt: "仁川機場", vi: "Sân bay Incheon", th: "สนามบินอินชอน", ms: "Lapangan Terbang Incheon", id: "Bandara Incheon", fil: "Incheon Airport", ru: "Аэропорт Инчхон", mn: "Инчон нисэх буудал" },
+            tower: { ko: "남산타워", en: "N Seoul Tower", ja: "Nソウルタワー", zh: "N首尔塔", zt: "N首爾塔", vi: "Tháp N Seoul", th: "เอ็นโซลทาวเวอร์", ms: "Menara N Seoul", id: "N Seoul Tower", fil: "N Seoul Tower", ru: "Башня Намсан", mn: "Н Сөүл цамхаг" },
+            beach: { ko: "해운대", en: "Haeundae Beach", ja: "海雲台", zh: "海云台", zt: "海雲台", vi: "Bãi biển Haeundae", th: "หาดแฮอุนแด", ms: "Pantai Haeundae", id: "Pantai Haeundae", fil: "Haeundae Beach", ru: "Пляж Хэундэ", mn: "Хэүндэ далайн эрэг" }
+        };
+
+        const defaultDest = { ko: "서울시청 광장", en: "City Hall Square", ja: "ソウル市庁広場", zh: "首尔市政厅广场", zt: "首爾市政廳廣場", vi: "Quảng trường Tòa thị chính Seoul", th: "ลานจัตุรัสศาลากลางโซล", ms: "Dataran Dewan Bandaraya Seoul", id: "Alun-alun Balai Kota Seoul", fil: "Seoul City Hall Square", ru: "Площадь мэрии Сеула", mn: "Сөүл хотын захиргааны талбай" };
+
+        // 대중교통 모의 데이터베이스 (12개국 전체 언어 실시간 데이터 연동 대응)
+        const transitDatabase = {
+            bus: [
+                { 
+                    id: "101", 
+                    line: {
+                        ko: "지선 101", en: "Green Bus 101", ja: "支線 101", zh: "支线 101", zt: "支線 101",
+                        vi: "Xe buýt phụ 101", th: "รถเมล์สาย 101", ms: "Bas Laluan 101", id: "Bus Feeder 101",
+                        fil: "Green Bus 101", ru: "Вспомогательный автобус 101", mn: "Туслах чиглэл 101"
+                    },
+                    bound: { 
+                        ko: "강남역 방면", en: "Bound for Gangnam Stn", ja: "江南駅方面", zh: "往江南站方向", zt: "往江南站方向",
+                        vi: "Hướng đi Ga Gangnam", th: "ไปสถานีกังนัม", ms: "Ke Stesen Gangnam", id: "Ke Stasiun Gangnam",
+                        fil: "Papuntang Gangnam Stn", ru: "В сторону ст. Каннам", mn: "Гангнам чиглэлд"
+                    }, 
+                    status: { 
+                        ko: "2분 (1정거장 전)", en: "2 Min (1 stop left)", ja: "2分 (1つ前の停留所)", zh: "2分钟 (1站前)", zt: "2分鐘 (1站前)",
+                        vi: "2 Phút (Còn 1 trạm)", th: "2 นาที (เหลือ 1 ป้าย)", ms: "2 Minit (1 hentian lagi)", id: "2 Menit (1 halte lagi)",
+                        fil: "2 Min (1 stop na lang)", ru: "2 мин (1 остановка до)", mn: "2 минут (1 буудлын өмнө)"
+                    }, 
+                    color: "bg-blue-600", 
+                    stop: { 
+                        ko: "시청광장 승강장 (ID: 12-345)", en: "City Square Station (ID: 12-345)", ja: "市役所広場停留所 (ID: 12-345)",
+                        zh: "市政广场站 (ID: 12-345)", zt: "市政廣場站 (ID: 12-345)", vi: "Trạm Quảng trường Thành phố (ID: 12-345)",
+                        th: "ป้ายรถเมล์ซิตี้สแควร์ (ID: 12-345)", ms: "Stesen City Square (ID: 12-345)", id: "Halte City Square (ID: 12-345)",
+                        fil: "City Square Station (ID: 12-345)", ru: "Остановка Сити-Сквер (ID: 12-345)", mn: "Хотын талбайн буудал (ID: 12-345)"
+                    } 
+                },
+                { 
+                    id: "7021", 
+                    line: {
+                        ko: "지선 7021", en: "Green Bus 7021", ja: "支線 7021", zh: "支线 7021", zt: "支線 7021",
+                        vi: "Xe buýt phụ 7021", th: "รถเมล์สาย 7021", ms: "Bas Laluan 7021", id: "Bus Feeder 7021",
+                        fil: "Green Bus 7021", ru: "Вспомогательный автобус 7021", mn: "Чиглэл 7021"
+                    },
+                    bound: { 
+                        ko: "종로3가 방면", en: "Bound for Jongno 3-ga", ja: "鐘路3街方面", zh: "往钟路3街方向", zt: "往鐘路3街方向",
+                        vi: "Hướng đi Jongno 3-ga", th: "ไปชงโน 3-กา", ms: "Ke Jongno 3-ga", id: "Ke Jongno 3-ga",
+                        fil: "Papuntang Jongno 3-ga", ru: "В сторону Чонно 3-га", mn: "Жонно 3-га чиглэлд"
+                    }, 
+                    status: { 
+                        ko: "7분 (3정거장 전)", en: "7 Min (3 stops left)", ja: "7分 (3つ前の停留所)", zh: "7分钟 (3站前)", zt: "7分鐘 (3站前)",
+                        vi: "7 Phút (Còn 3 trạm)", th: "7 นาที (เหลือ 3 ป้าย)", ms: "7 Minit (3 hentian lagi)", id: "7 Menit (3 halte lagi)",
+                        fil: "7 Min (3 stops na lang)", ru: "7 мин (3 остановки до)", mn: "7 минут (3 буудлын өмнө)"
+                    }, 
+                    color: "bg-green-600", 
+                    stop: { 
+                        ko: "시청광장 승강장 (ID: 12-345)", en: "City Square Station (ID: 12-345)", ja: "市役所広場停留所 (ID: 12-345)",
+                        zh: "市政广场站 (ID: 12-345)", zt: "市政廣場站 (ID: 12-345)", vi: "Trạm Quảng trường Thành phố (ID: 12-345)",
+                        th: "ป้ายรถเมล์ซิตี้สแควร์ (ID: 12-345)", ms: "Stesen City Square (ID: 12-345)", id: "Halte City Square (ID: 12-345)",
+                        fil: "City Square Station (ID: 12-345)", ru: "Остановка Сити-Сквер (ID: 12-345)", mn: "Хотын талбайн буудал (ID: 12-345)"
+                    } 
+                },
+                { 
+                    id: "143", 
+                    line: {
+                        ko: "간선 143", en: "Blue Bus 143", ja: "幹線 143", zh: "干线 143", zt: "幹線 143",
+                        vi: "Xe buýt chính 143", th: "รถเมล์สาย 143", ms: "Bas Utama 143", id: "Bus Utama 143",
+                        fil: "Blue Bus 143", ru: "Магистральный автобус 143", mn: "Үндсэн чиглэл 143"
+                    },
+                    bound: { 
+                        ko: "개포동 방면", en: "Bound for Gaepo-dong", ja: "開浦洞方面", zh: "往开浦洞方向", zt: "往開浦洞方向",
+                        vi: "Hướng đi Gaepo-dong", th: "ไปแกโพดง", ms: "Ke Gaepo-dong", id: "Ke Gaepo-dong",
+                        fil: "Papuntang Gaepo-dong", ru: "В сторону Кэпхо-дон", mn: "Гэпү-дон чиглэлд"
+                    }, 
+                    status: { 
+                        ko: "4분 (2정거장 전)", en: "4 Min (2 stops left)", ja: "4分 (2つ前の停留所)", zh: "4分钟 (2站前)", zt: "4分鐘 (2站前)",
+                        vi: "4 Phút (Còn 2 trạm)", th: "4 นาที (เหลือ 2 ป้าย)", ms: "4 Minit (2 hentian lagi)", id: "4 Menit (2 halte lagi)",
+                        fil: "4 Min (2 stops na lang)", ru: "4 мин (2 остановки до)", mn: "4 минут (2 буудлын өмнө)"
+                    }, 
+                    color: "bg-blue-600", 
+                    stop: { 
+                        ko: "롯데백화점 승강장 (ID: 02-141)", en: "Lotte Dept Store (ID: 02-141)", ja: "ロッテ百貨店停留所 (ID: 02-141)",
+                        zh: "乐天百货站 (ID: 02-141)", zt: "樂天百貨站 (ID: 02-141)", vi: "Trạm Trung tâm thương mại Lotte (ID: 02-141)",
+                        th: "ป้ายรถเมล์ห้างล็อตเต้ (ID: 02-141)", ms: "Stesen Lotte Dept Store (ID: 02-141)", id: "Halte Lotte Dept Store (ID: 02-141)",
+                        fil: "Lotte Dept Store (ID: 02-141)", ru: "Остановка Универмаг Лотте (ID: 02-141)", mn: "Лотте их дэлгүүрийн буудал (ID: 02-141)"
+                    } 
+                },
+                { 
+                    id: "150", 
+                    line: {
+                        ko: "간선 150", en: "Blue Bus 150", ja: "幹線 150", zh: "干线 150", zt: "幹線 150",
+                        vi: "Xe buýt chính 150", th: "รถเมล์สาย 150", ms: "Bas Utama 150", id: "Bus Utama 150",
+                        fil: "Blue Bus 150", ru: "Магистральный автобус 150", mn: "Үндсэн чиглэл 150"
+                    },
+                    bound: { 
+                        ko: "도봉산 방면", en: "Bound for Dobongsan", ja: "道峰山方面", zh: "往道峰山方向", zt: "往道峰山方向",
+                        vi: "Hướng đi Dobongsan", th: "ไปโดบงซาน", ms: "Ke Dobongsan", id: "Ke Dobongsan",
+                        fil: "Papuntang Dobongsan", ru: "В сторону Тобонсан", mn: "Добунсан чиглэлд"
+                    }, 
+                    status: { 
+                        ko: "곧 도착", en: "Approaching", ja: "まもなく到着", zh: "即刻到站", zt: "即將到站",
+                        vi: "Sắp đến", th: "กำลังเข้าเทียบท่า", ms: "Menghampiri", id: "Segera Tiba",
+                        fil: "Malapit na", ru: "Приближается", mn: "Тун удахгүй"
+                    }, 
+                    color: "bg-blue-600", 
+                    stop: { 
+                        ko: "서울역 버스환승센터 (ID: 02-001)", en: "Seoul Station Center (ID: 02-001)", ja: "ソウル駅バス乗換센터 (ID: 02-001)",
+                        zh: "首尔站公交换乘中心 (ID: 02-001)", zt: "首爾站公車轉乘中心 (ID: 02-001)", vi: "Trung tâm trung chuyển xe buýt Ga Seoul (ID: 02-001)",
+                        th: "ศูนย์เปลี่ยนถ่ายรถเมล์สถานีโซล (ID: 02-001)", ms: "Pusat Transit Bas Stesen Seoul (ID: 02-001)", id: "Pusat Transfer Bus Stasiun Seoul (ID: 02-001)",
+                        fil: "Seoul Station Bus Interchange (ID: 02-001)", ru: "Транспортный узел вокзала Сеула (ID: 02-001)", mn: "Сөүл вокзалын автобус дамжин өнгөрөх төв (ID: 02-001)"
+                    } 
+                }
+            ],
+            subway: [
+                { 
+                    line: "1", 
+                    station: { 
+                        ko: "서울역 (1호선)", en: "Seoul Station (Line 1)", ja: "ソウル駅 (1号線)", zh: "首尔站 (1号线)", zt: "首爾站 (1號線)",
+                        vi: "Ga Seoul (Tuyến số 1)", th: "สถานีโซล (สาย 1)", ms: "Stesen Seoul (Laluan 1)", id: "Stasiun Seoul (Jalur 1)",
+                        fil: "Seoul Station (Line 1)", ru: "Вокзал Сеул (Линия 1)", mn: "Сөүл вокзал (1-р шугам)"
+                    }, 
+                    bound: { 
+                        ko: "인천/신창 방면", en: "Incheon/Sinchang Bound", ja: "仁川・新昌方面", zh: "往仁川/新昌方向", zt: "往仁川/新昌方向",
+                        vi: "Hướng đi Incheon/Sinchang", th: "ไปอินชอน/ชินชัง", ms: "Hala ke Incheon/Sinchang", id: "Menuju Incheon/Sinchang",
+                        fil: "Papuntang Incheon/Sinchang", ru: "В сторону Инчхон/Синчхан", mn: "Инчон/Шинчан чиглэлд"
+                    }, 
+                    status: { 
+                        ko: "진입 중", en: "Approaching", ja: "進入中", zh: "正在进站", zt: "正在進站",
+                        vi: "Đang vào ga", th: "กำลังเข้าสถานี", ms: "Menghampiri", id: "Sedang Masuk",
+                        fil: "Papasok na", ru: "Прибывает", mn: "Орж ирж байна"
+                    }, 
+                    color: "bg-blue-800" 
+                },
+                { 
+                    line: "2", 
+                    station: { 
+                        ko: "시청역 (2호선)", en: "City Hall (Line 2)", ja: "市庁駅 (2号線)", zh: "市厅站 (2号线)", zt: "市廳站 (2號線)",
+                        vi: "Ga City Hall (Tuyến số 2)", th: "สถานีศาลากลาง (สาย 2)", ms: "Stesen City Hall (Laluan 2)", id: "Stasiun Balai Kota (Jalur 2)",
+                        fil: "City Hall (Line 2)", ru: "Сити-Холл (Линия 2)", mn: "Сити холл (2-р шугам)"
+                    }, 
+                    bound: { 
+                        ko: "을지로입구 방면", en: "Euljiro 1-ga Bound", ja: "乙支路入口方面", zh: "往乙支路入口方向", zt: "往乙支路入口方向",
+                        vi: "Hướng đi Euljiro 1-ga", th: "ไปอึลจิโร 1-กา", ms: "Hala ke Euljiro 1-ga", id: "Menuju Euljiro 1-ga",
+                        fil: "Papuntang Euljiro 1-ga", ru: "В сторону Ыльчиро 1-га", mn: "Өлжиро 1-га чиглэлд"
+                    }, 
+                    status: { 
+                        ko: "전역 출발", en: "Departed Prev. Station", ja: "前駅出発", zh: "前站已出发", zt: "前站已出發",
+                        vi: "Đã rời ga trước", th: "ออกจากสถานีก่อนหน้าแล้ว", ms: "Meninggalkan Stesen Sblm", id: "Berangkat Dari Stasiun Sblm",
+                        fil: "Umalis sa Nakaraang Station", ru: "Отправился с предыд. станции", mn: "Өмнөх өртөөнөөс хөдөлсөн"
+                    }, 
+                    color: "bg-green-500" 
+                },
+                { 
+                    line: "3", 
+                    station: { 
+                        ko: "시청역 (3호선)", en: "City Hall (Line 3)", ja: "市庁駅 (3号線)", zh: "市厅站 (3号线)", zt: "市廳站 (3號線)",
+                        vi: "Ga City Hall (Tuyến số 3)", th: "สถานีศาลากลาง (สาย 3)", ms: "Stesen City Hall (Laluan 3)", id: "Stasiun Balai Kota (Jalur 3)",
+                        fil: "City Hall (Line 3)", ru: "Сити-Холл (Линия 3)", mn: "Сити холл (3-р шугам)"
+                    }, 
+                    bound: { 
+                        ko: "상행 (일산 방면)", en: "Ilsan Bound", ja: "上り (一山方面)", zh: "上行 (往一山方向)", zt: "上行 (往一山方向)",
+                        vi: "Hướng đi Ilsan", th: "ไปอิลซาน", ms: "Hala ke Ilsan", id: "Menuju Ilsan",
+                        fil: "Papuntang Ilsan", ru: "В сторону Ильсана", mn: "Илсан чиглэлд"
+                    }, 
+                    status: { 
+                        ko: "전역 출발", en: "Departed Prev. Station", ja: "前駅出発", zh: "前站已出发", zt: "前站已出發",
+                        vi: "Đã rời ga trước", th: "ออกจากสถานีก่อนหน้าแล้ว", ms: "Meninggalkan Stesen Sblm", id: "Berangkat Dari Stasiun Sblm",
+                        fil: "Umalis sa Nakaraang Station", ru: "Отправился с предыд. станции", mn: "Өмнөх өртөөнөөс хөдөлсөн"
+                    }, 
+                    color: "bg-orange-500" 
+                },
+                { 
+                    line: "4", 
+                    station: { 
+                        ko: "명동역 (4호선)", en: "Myeong-dong (Line 4)", ja: "明洞駅 (4号線)", zh: "明洞站 (4号线)", zt: "明洞站 (4號線)",
+                        vi: "Ga Myeong-dong (Tuyến số 4)", th: "สถานีเมียงดง (สาย 4)", ms: "Stesen Myeong-dong (Laluan 4)", id: "Stasiun Myeong-dong (Jalur 4)",
+                        fil: "Myeong-dong (Line 4)", ru: "Мёндон (Линия 4)", mn: "Мёндон (4-р шугам)"
+                    }, 
+                    bound: { 
+                        ko: "당고개 방면", en: "Danggogae Bound", ja: "タンゴゲ方面", zh: "往堂岘方向", zt: "往堂峴方向",
+                        vi: "Hướng đi Danggogae", th: "ไปดังกอแก", ms: "Hala ke Danggogae", id: "Menuju Danggogae",
+                        fil: "Papuntang Danggogae", ru: "В сторону Тангогэ", mn: "Дангогэ чиглэлд"
+                    }, 
+                    status: { 
+                        ko: "3분 전 (회현 출발)", en: "3 Min (Departed Hoehyeon)", ja: "3分前 (会賢出発)", zh: "3分钟前 (会贤已出发)", zt: "3分鐘前 (會賢已出發)",
+                        vi: "3 Phút (Đã rời Hoehyeon)", th: "3 นาที (ออกจากฮเวฮยอนแล้ว)", ms: "3 Minit (Meninggalkan Hoehyeon)", id: "3 Menit (Berangkat Dari Hoehyeon)",
+                        fil: "3 Min (Umalis sa Hoehyeon)", ru: "3 мин (отбыл из Хвехён)", mn: "3 минутын өмнө (Хөихёнээс хөдөлсөн)"
+                    }, 
+                    color: "bg-cyan-500" 
+                }
+            ]
+        };
+
+        // 12개 주요 국어 100% 완전 번역 사전
+        const translations = {
+            ko: {
+                app_title: "K-MATE",
+                welcome: "스마트 생활 도우미",
+                welcome_subtitle: "오늘도 편리하고 신속하게!",
+                menu_nav: "내비게이션",
+                menu_nav_desc: "실시간 실제 지도 장소 검색",
+                menu_pay: "페이 및 결제",
+                menu_transit: "대중교통 안내",
+                menu_transit_desc: "실시간 도착 정보 조회",
+                menu_complain: "민원 신고",
+                menu_complain_desc: "신속한 생활 불편 처리",
+                sub_menu_title: "민원 소통 전용 메뉴",
+                sub_easy_report: "간편 민원 신고",
+                sub_easy_report_desc: "사진과 내용으로 신속한 등록",
+                sub_report_status: "민원 처리 현황",
+                sub_report_status_desc: "접수 현황 및 최종 결과 확인",
+                emergency_hotline: "긴급 안전 신고 센터 (112)",
+                form_category: "민원 카테고리",
+                form_location: "발생 및 피해 위치",
+                form_desc: "불편 및 상세 내용",
+                form_photo: "현장 및 증빙 사진",
+                form_photo_upload: "터치하여 사진 업로드",
+                form_photo_limit: "JPG, PNG (최대 10MB)",
+                btn_submit: "신청서 안전하게 제출",
+                toast_submit_success: "민원이 안전하게 등록되었습니다!",
+                cat_road: "도로 및 교통 보수",
+                cat_env: "불법 쓰레기 및 위생",
+                cat_safety: "공공 안전 시설 고장",
+                cat_etc: "기타 일반 건의사항",
+                status_received: "접수 완료",
+                status_reviewing: "부서 처리 중",
+                status_completed: "조치 완료",
+                no_complaints: "등록된 민원이 존재하지 않습니다.",
+                placeholder_location: "예: 시청로 123 버스 정류장 근처",
+                placeholder_desc: "내용을 자세히 설명해 주시면 빠른 처리가 가능합니다.",
+                nav_placeholder: "검색할 장소 입력...",
+                nav_searching: "위치 탐색 중...",
+                nav_route_info: "실시간 경로 탐색 완료",
+                nav_start: "출발지: 서울역",
+                nav_start_virtual: "출발지: 경기도 수원시청",
+                nav_end: "도착지",
+                nav_dist: "거리",
+                nav_time: "예상 시간",
+                nav_time_unit_m: "분",
+                nav_time_unit_h: "시간",
+                nav_quick_btn: "주요 목적지",
+                nav_err_no_loc: "검색 결과를 찾을 수 없습니다.",
+                nav_start_badge: "출발",
+                nav_dest_badge: "도착",
+                nav_active: "GPS 안내 중",
+                pay_title: "시민 간편 페이",
+                pay_balance_label: "보유 잔액",
+                pay_barcode_label: "결제용 바코드 / QR 코드",
+                pay_active_nfc: "NFC 결제 활성화됨",
+                
+                gps_btn: "내 위치 (GPS)",
+                gps_allowed: "실제 현재 위치가 출발지로 설정되었습니다.",
+                gps_denied: "보안 차단 또는 수신 실패로 GPS를 가져오지 못했습니다.",
+                gps_virtual_connected: "가상 GPS 위치가 성공적으로 활성화되었습니다!",
+                transit_search_placeholder: "버스 번호 또는 역 이름 검색...",
+                transit_no_search: "검색 결과에 맞는 노선이나 정류장이 없습니다.",
+                pay_recharge: "충전하기",
+                pay_recharge_title: "페이 잔액 충전",
+                pay_recharge_custom: "직접 입력 금액 (₩)",
+                pay_recharge_btn_confirm: "충전 완료",
+                pay_recharge_success: "충전이 정상적으로 완료되었습니다!",
+                pay_recharge_err: "1,000원 이상의 올바른 액수를 기입해주세요.",
+
+                gps_modal_title: "GPS 신호 연결 제한됨",
+                gps_modal_reason: "보안 샌드박스 아이프레임 정책 적용",
+                gps_modal_desc: "현재 환경은 보안 샌드박스로 구성되어 브라우저 내 위치 수신이 차단될 수 있습니다. 아래 가상 GPS 모드를 활성화하면 경기도 수원시청 기준으로 실감 나는 내비게이션 경로 탐색을 체험해 보실 수 있습니다.",
+                gps_virtual_btn: "가상 GPS 활성화 (수원시청)",
+                gps_retry_btn: "실제 기기 GPS 재시도",
+                gps_close_btn: "닫기"
+            },
+            en: {
+                app_title: "K-MATE",
+                welcome: "SMART CIVIC ASSISTANT",
+                welcome_subtitle: "Fast & Convenient Services",
+                menu_nav: "Navigation",
+                menu_nav_desc: "Real-world Map & Search",
+                menu_pay: "Pay & Bills",
+                menu_transit: "Transit Info",
+                menu_transit_desc: "Bus & Subway Schedules",
+                menu_complain: "Civil Reports",
+                menu_complain_desc: "Fast Resolution Center",
+                sub_menu_title: "Civic Complaints Menu",
+                sub_easy_report: "Easy Civil Complaint",
+                sub_easy_report_desc: "Quick submission with photo",
+                sub_report_status: "Complaint Status",
+                sub_report_status_desc: "Track progress and actions",
+                emergency_hotline: "Emergency Safety Hotline (112)",
+                form_category: "Complaint Category",
+                form_location: "Location of Issue",
+                form_desc: "Description of Complaint",
+                form_photo: "Attach Evidence / Photo",
+                form_photo_upload: "Tap to upload site photo",
+                form_photo_limit: "JPG, PNG (Max 10MB)",
+                btn_submit: "Submit Complaint Form",
+                toast_submit_success: "Your complaint is submitted!",
+                cat_road: "Roads & Traffic Defects",
+                cat_env: "Trash & Public Hygiene",
+                cat_safety: "Safety & Streetlights Failure",
+                cat_etc: "General Civic Request",
+                status_received: "Received",
+                status_reviewing: "Under Review",
+                status_completed: "Resolved",
+                no_complaints: "No registered complaints found.",
+                placeholder_location: "e.g., Near City Hall Bus Stop",
+                placeholder_desc: "Please detail the issue here for prompt response.",
+                nav_placeholder: "Enter place to search...",
+                nav_searching: "Searching address...",
+                nav_route_info: "Real-time Route Estimated",
+                nav_start: "Start: Seoul Station",
+                nav_start_virtual: "Start: Suwon City Hall, Gyeonggi",
+                nav_end: "Dest",
+                nav_dist: "Distance",
+                nav_time: "Est. Time",
+                nav_time_unit_m: "min",
+                nav_time_unit_h: "hour",
+                nav_quick_btn: "Quick Spots",
+                nav_err_no_loc: "No locations found.",
+                nav_start_badge: "START",
+                nav_dest_badge: "DEST",
+                nav_active: "GPS ACTIVE",
+                pay_title: "Citizen Pay",
+                pay_balance_label: "My Wallet Balance",
+                pay_barcode_label: "PAYMENT BARCODE / QR",
+                pay_active_nfc: "NFC ACTIVE",
+                gps_btn: "My Location (GPS)",
+                gps_allowed: "Real GPS Location is set as Starting point.",
+                gps_denied: "Failed to grab GPS due to security restriction or timeout.",
+                gps_virtual_connected: "Virtual GPS (Suwon City Hall) is successfully connected!",
+                transit_search_placeholder: "Search bus number or station name...",
+                transit_no_search: "No routes or stations matched.",
+                pay_recharge: "Recharge",
+                pay_recharge_title: "Recharge Balance",
+                pay_recharge_custom: "Enter amount (₩)",
+                pay_recharge_btn_confirm: "Confirm Recharge",
+                pay_recharge_success: "Wallet Recharged Successfully!",
+                pay_recharge_err: "Please enter an amount of 1,000 KRW or more.",
+                gps_modal_title: "GPS Signal Blocked",
+                gps_modal_reason: "Secure Sandbox Iframe Constraint",
+                gps_modal_desc: "This environment runs inside a secure iframe, which blocks real device GPS queries. You can enable Virtual GPS to set the start point to Gyeonggi Suwon City Hall, allowing you to test real navigation calculations immediately.",
+                gps_virtual_btn: "Enable Virtual GPS (Suwon City)",
+                gps_retry_btn: "Retry Device GPS",
+                gps_close_btn: "Close"
+            },
+            ja: {
+                app_title: "K-MATE",
+                welcome: "スマートシビックアシスタント",
+                welcome_subtitle: "いつでも迅速、安心なサポート",
+                menu_nav: "ナビゲーション",
+                menu_nav_desc: "リアルマップ・実際の場所検索",
+                menu_pay: "スマート決済",
+                menu_transit: "交通情報",
+                menu_transit_desc: "バス・地下鉄の到着案内",
+                menu_complain: "苦情・請願申告",
+                menu_complain_desc: "迅速な公共苦情受付",
+                sub_menu_title: "請願申告メニュー",
+                sub_easy_report: "簡易苦情申告",
+                sub_easy_report_desc: "写真とテキストで即時登録",
+                sub_report_status: "苦情処理の現状",
+                sub_report_status_desc: "申請状況と結果のリアル追跡",
+                emergency_hotline: "緊急安全ホットライン (112)",
+                form_category: "苦情カテゴリー",
+                form_location: "発生・被害場所",
+                form_desc: "具体的な不都合の内容",
+                form_photo: "現場・証明写真添付",
+                form_photo_upload: "タップして写真をアップロード",
+                form_photo_limit: "JPG, PNG (最大 10MB)",
+                btn_submit: "苦情申請書を安全に送信",
+                toast_submit_success: "苦情が正常に登録されました！",
+                cat_road: "道路・交通施設の破損",
+                cat_env: "不法投棄・環境衛生問題",
+                cat_safety: "街灯故障・安全危険要素",
+                cat_etc: "その他一般意見・提案",
+                status_received: "受付完了",
+                status_reviewing: "部処処理中",
+                status_completed: "対応完了",
+                no_complaints: "登録された請願が見つかりません。",
+                placeholder_location: "例：市役所路123 バス停付近",
+                placeholder_desc: "迅速な対応のため、不具合の詳細をご記入ください。",
+                nav_placeholder: "検索する場所を入力...",
+                nav_searching: "位置探索中...",
+                nav_route_info: "ルート探索完了",
+                nav_start: "出発地: ソウル駅",
+                nav_start_virtual: "出発地: 京畿道水原市庁",
+                nav_end: "目的地",
+                nav_dist: "距離",
+                nav_time: "所要時間",
+                nav_time_unit_m: "分",
+                nav_time_unit_h: "時間",
+                nav_quick_btn: "主要スポット",
+                nav_err_no_loc: "検索結果が見つかりません。",
+                nav_start_badge: "出発",
+                nav_dest_badge: "到着",
+                nav_active: "GPS案内中",
+                pay_title: "市民簡易ペイ",
+                pay_balance_label: "保有残高",
+                pay_barcode_label: "決済用バーコード / QRコード",
+                pay_active_nfc: "NFC決済有効",
+                transit_bus_stop: "市役所広場停留所 (ID: 12-345)",
+                transit_bus_101: "支線 101",
+                transit_bus_7021: "支線 7021",
+                transit_bound_gangnam: "江南駅方面",
+                transit_bound_jongno: "鐘路3街方面",
+                transit_status_1stop: "2分 (1つ前の停留所)",
+                transit_status_3stops: "7分 (3つ前の停留所)",
+                transit_subway_station: "市役所駅 (3号線)",
+                transit_subway_line3: "3号線",
+                transit_subway_bound: "上り (一山方面)",
+                transit_subway_status: "前駅出発",
+                gps_btn: "現在地 (GPS)",
+                gps_allowed: "現在地が出発点に設定されました。",
+                gps_denied: "セキュリティ制限等でGPS取得に失敗しました。",
+                gps_virtual_connected: "仮想GPS位置（水原市庁）が正常に接続されました！",
+                transit_search_placeholder: "バス路線・駅名を入力...",
+                transit_no_search: "一致する情報がありません。",
+                pay_recharge: "チャージする",
+                pay_recharge_title: "チャージ",
+                pay_recharge_custom: "チャージ金額 (₩)",
+                pay_recharge_btn_confirm: "チャージ完了",
+                pay_recharge_success: "正常にチャージされました！",
+                pay_recharge_err: "1,000ウォン以上の金額を入力してください。",
+                gps_modal_title: "GPS制限アラート",
+                gps_modal_reason: "サンドボックスセキュリティの制限",
+                gps_modal_desc: "プレビュー環境のセキュリティ上の制限により、実機のGPSが遮断される場合があります。仮想GPSモードをオンにすることで、水原市庁（京畿道）を出発地として、ルート計算やマップ案内を即時テスト体験いただけます。",
+                gps_virtual_btn: "仮想GPS有効化 (水原市庁)",
+                gps_retry_btn: "GPSの再試行",
+                gps_close_btn: "閉じる"
+            },
+            zh: {
+                app_title: "K-MATE",
+                welcome: "智能生活助手",
+                welcome_subtitle: "今天也安全、便捷！",
+                menu_nav: "导航服务",
+                menu_nav_desc: "实时真实地图搜索",
+                menu_pay: "支付及结账",
+                menu_transit: "公共交通指南",
+                menu_transit_desc: "查询实时到站信息",
+                menu_complain: "民事诉求申报",
+                menu_complain_desc: "快速解决生活不便",
+                sub_menu_title: "民诉专区菜单",
+                sub_easy_report: "简易诉求申报",
+                sub_easy_report_desc: "照片与文字一键登记",
+                sub_report_status: "诉求处理进度",
+                sub_report_status_desc: "追踪受理状况和解决结果",
+                emergency_hotline: "紧急报警电话 (112)",
+                form_category: "民诉类别",
+                form_location: "事发或损坏地点",
+                form_desc: "具体诉求及不便",
+                form_photo: "现场图片或证明材料",
+                form_photo_upload: "点击拍摄或上传照片",
+                form_photo_limit: "JPG, PNG (最大 10MB)",
+                btn_submit: "确认提交市民诉求",
+                toast_submit_success: "您的诉求已成功登记！",
+                cat_road: "道路与公共设施损坏",
+                cat_env: "非法倾倒垃圾及公共卫生",
+                cat_safety: "路灯黑灭及安全防范故障",
+                cat_etc: "其他公众建言与咨询",
+                status_received: "已受理",
+                status_reviewing: "正在办理中",
+                status_completed: "办理完毕",
+                no_complaints: "没有发现任何相关的登记记录。",
+                placeholder_location: "例如：市政路123号公交站旁",
+                placeholder_desc: "请详细描述您的问题，以便我们快速处理。",
+                nav_placeholder: "输入搜索地点...",
+                nav_searching: "正在查询地址...",
+                nav_route_info: "实时路线规划成功",
+                nav_start: "起点: 首尔站",
+                nav_start_virtual: "起点: 水原市厅",
+                nav_end: "终点",
+                nav_dist: "距离",
+                nav_time: "预计时间",
+                nav_time_unit_m: "分钟",
+                nav_time_unit_h: "小时",
+                nav_quick_btn: "推荐目的地",
+                nav_err_no_loc: "未找到相关地点。",
+                nav_start_badge: "起点",
+                nav_dest_badge: "终点",
+                nav_active: "GPS 导航中",
+                pay_title: "市民快捷支付",
+                pay_balance_label: "钱包余额",
+                pay_barcode_label: "付款条形码 / QR 码",
+                pay_active_nfc: "NFC 支付激活",
+                gps_btn: "我的位置 (GPS)",
+                gps_allowed: "实际当前位置已设为起点。",
+                gps_denied: "由于安全限制或超时，未获取到定位。",
+                gps_virtual_connected: "虚拟GPS位置（水原市厅）已成功连接！",
+                transit_search_placeholder: "搜索公交线路或站点...",
+                transit_no_search: "未匹配到任何线路或站点。",
+                pay_recharge: "充值",
+                pay_recharge_title: "余额充值",
+                pay_recharge_custom: "输入充值金额 (₩)",
+                pay_recharge_btn_confirm: "确认充值",
+                pay_recharge_success: "钱包充值成功！",
+                pay_recharge_err: "请输入不小于 1,000 韩元的金额。",
+                gps_modal_title: "GPS 信号受阻",
+                gps_modal_reason: "受限于沙盒内嵌网页安全政策",
+                gps_modal_desc: "当前系统在安全的沙盒环境内运行，可能会拦截真实的设备GPS。您可以激活虚拟GPS以将起点设为水原市厅，即刻体验并测试完整的路径规划导航。",
+                gps_virtual_btn: "启用虚拟GPS（水原市厅）",
+                gps_retry_btn: "重新尝试获取GPS",
+                gps_close_btn: "关闭"
+            },
+            zt: {
+                app_title: "K-MATE",
+                welcome: "智能生活助手",
+                welcome_subtitle: "讓生活更便利，更舒心！",
+                menu_nav: "導航服務",
+                menu_nav_desc: "實時真實地圖搜尋",
+                menu_pay: "支付及結賬",
+                menu_transit: "公共交通指南",
+                menu_transit_desc: "查詢實時到站資訊",
+                menu_complain: "民事訴求申報",
+                menu_complain_desc: "快速解決生活不便",
+                sub_menu_title: "民訴專區選單",
+                sub_easy_report: "簡易訴求申報",
+                sub_easy_report_desc: "照片與文字一鍵登記",
+                sub_report_status: "訴求處理進度",
+                sub_report_status_desc: "追蹤受理狀況和解決結果",
+                emergency_hotline: "緊急報警電話 (112)",
+                form_category: "民訴類別",
+                form_location: "事發或損壞地點",
+                form_desc: "具體訴求及不便",
+                form_photo: "現場圖片或證明材料",
+                form_photo_upload: "點擊拍攝或上傳照片",
+                form_photo_limit: "JPG, PNG (最大 10MB)",
+                btn_submit: "確認提交市民訴求",
+                toast_submit_success: "您的訴求已成功登記！",
+                cat_road: "道路與公共設施損壞",
+                cat_env: "非法傾倒垃圾及公共衛生",
+                cat_safety: "路燈黑滅及安全防範故障",
+                cat_etc: "其他公眾建言與諮詢",
+                status_received: "已受理",
+                status_reviewing: "正在辦理中",
+                status_completed: "辦理完畢",
+                no_complaints: "沒有發現任何相關的登記紀錄。",
+                placeholder_location: "例如：市政路123號公車站旁",
+                placeholder_desc: "請詳細描述您的問題，以便我們快速處理。",
+                nav_placeholder: "輸入搜尋地點...",
+                nav_searching: "正在查詢地址...",
+                nav_route_info: "即時路線規劃成功",
+                nav_start: "起點: 首爾站",
+                nav_start_virtual: "起點: 水原市廳",
+                nav_end: "終點",
+                nav_dist: "距離",
+                nav_time: "預計時間",
+                nav_time_unit_m: "分鐘",
+                nav_time_unit_h: "小時",
+                nav_quick_btn: "推薦目的地",
+                nav_err_no_loc: "未找到相關地點。",
+                nav_start_badge: "起點",
+                nav_dest_badge: "終點",
+                nav_active: "GPS 導航中",
+                pay_title: "市民快捷支付",
+                pay_balance_label: "錢包餘額",
+                pay_barcode_label: "付款條形碼 / QR 碼",
+                pay_active_nfc: "NFC 支付激活",
+                gps_btn: "我的位置 (GPS)",
+                gps_allowed: "實際當前位置已設為起點。",
+                gps_denied: "由於安全限制，未能獲取您的GPS定位。",
+                gps_virtual_connected: "已成功啟動虛擬GPS位置（水原市廳）！",
+                transit_search_placeholder: "搜尋公車路線或站點...",
+                transit_no_search: "未匹配到任何路線或站點。",
+                pay_recharge: "充值",
+                pay_recharge_title: "錢包餘額充值",
+                pay_recharge_custom: "直接輸入充值金額 (₩)",
+                pay_recharge_btn_confirm: "確認充值",
+                pay_recharge_success: "錢包充值成功！",
+                pay_recharge_err: "請輸入不低於 1,000 韓元的正確金額。",
+                gps_modal_title: "GPS 信號受阻",
+                gps_modal_reason: "安全沙箱政策限制",
+                gps_modal_desc: "由於目前處於安全沙箱環境，真實的設備GPS定位可能被攔截。啟用虛擬GPS模式，可將起點設置為水原市廳，立即體驗完整的路線規劃與導航測試。",
+                gps_virtual_btn: "啟用虛擬GPS（水原市廳）",
+                gps_retry_btn: "重新嘗試獲取GPS",
+                gps_close_btn: "關閉"
+            },
+            vi: {
+                app_title: "K-MATE",
+                welcome: "TRỢ LÝ ĐÔ THỊ THÔNG MINH",
+                welcome_subtitle: "Hỗ trợ hành chính nhanh nhất",
+                menu_nav: "Bản Đồ Chỉ Đường",
+                menu_nav_desc: "Tìm kiếm vị trí bản đồ thực tế",
+                menu_pay: "Thanh Toán Nhanh",
+                menu_transit: "Giao Thông Công Cộng",
+                menu_transit_desc: "Tra cứu lộ trình xe bus & tàu",
+                menu_complain: "Báo Cáo Kiến Nghị",
+                menu_complain_desc: "Giải quyết bất tiện của dân",
+                sub_menu_title: "Danh mục báo cáo dân sinh",
+                sub_easy_report: "Báo Cáo Nhanh Dân Sinh",
+                sub_easy_report_desc: "Nộp phản ánh trực quan bằng ảnh",
+                sub_report_status: "Trạng Thái Xử Lý",
+                sub_report_status_desc: "Kiểm tra tiến độ giải quyết",
+                emergency_hotline: "Đường Dây Nóng Khẩn Cấp (112)",
+                form_category: "Danh Mục Kiến Nghị",
+                form_location: "Địa Điểm Xảy Ra",
+                form_desc: "Chi Tiết Nội Dung Phản Ánh",
+                form_photo: "Hình Ảnh Chứng Minh",
+                form_photo_upload: "Nhấn để chụp hoặc tải ảnh",
+                form_photo_limit: "JPG, PNG (Tối đa 10MB)",
+                btn_submit: "Gửi Đơn Kiến Nghị Ngay",
+                toast_submit_success: "Báo cáo của bạn đã được tiếp nhận!",
+                cat_road: "Hư hỏng đường bộ & rào chắn",
+                cat_env: "Rác thải bừa bãi & vệ sinh",
+                cat_safety: "Đèn đường hỏng & rủi ro mất an toàn",
+                cat_etc: "Ý kiến đóng góp xã hội khác",
+                status_received: "Đã tiếp nhận",
+                status_reviewing: "Đang kiểm tra",
+                status_completed: "Đã khắc phục",
+                no_complaints: "Chưa có báo cáo nào được ghi nhận.",
+                placeholder_location: "VD: Gần trạm xe buýt 123 đường Thị Chính",
+                placeholder_desc: "Vui lòng mô tả chi tiết vấn đề ở đây để được xử lý nhanh chóng.",
+                nav_placeholder: "Nhập địa điểm tìm kiếm...",
+                nav_searching: "Đang dò tìm vị trí...",
+                nav_route_info: "Đã lập lộ trình thực tế",
+                nav_start: "Điểm đi: Ga Seoul",
+                nav_start_virtual: "Điểm đi: Tòa thị chính Suwon",
+                nav_end: "Điểm đến",
+                nav_dist: "Khoảng cách",
+                nav_time: "Thời gian dự kiến",
+                nav_time_unit_m: "phút",
+                nav_time_unit_h: "giờ",
+                nav_quick_btn: "Địa điểm gợi ý",
+                nav_err_no_loc: "Không tìm thấy địa điểm.",
+                nav_start_badge: "ĐIỂM ĐI",
+                nav_dest_badge: "ĐIỂM ĐẾN",
+                nav_active: "NẠP ĐỊNH VỊ",
+                pay_title: "Ví điện tử công dân",
+                pay_balance_label: "Số dư ví",
+                pay_barcode_label: "Mã vạch / QR thanh toán",
+                pay_active_nfc: "NFC ĐÃ KÍCH HOẠT",
+                gps_btn: "Vị trí của tôi (GPS)",
+                gps_allowed: "Vị trí thực tế đã được thiết lập làm điểm đi.",
+                gps_denied: "Không thể lấy vị trí GPS do giới hạn bảo mật.",
+                gps_virtual_connected: "Đã kích hoạt vị trí GPS giả lập (Tòa thị chính Suwon)!",
+                transit_search_placeholder: "Tìm kiếm xe buýt hoặc ga tàu...",
+                transit_no_search: "Không tìm thấy tuyến hoặc trạm phù hợp.",
+                pay_recharge: "Nạp tiền",
+                pay_recharge_title: "Nạp tiền vào ví",
+                pay_recharge_custom: "Nhập số tiền nạp (₩)",
+                pay_recharge_btn_confirm: "Xác nhận nạp",
+                pay_recharge_success: "Nạp tiền vào ví thành công!",
+                pay_recharge_err: "Vui lòng nhập số tiền từ 1.000 KRW trở lên.",
+                gps_modal_title: "Tín hiệu GPS bị chặn",
+                gps_modal_reason: "Hạn chế bảo mật của Sandbox",
+                gps_modal_desc: "Do chạy trong môi trường bảo mật Sandbox, GPS thực tế có thể bị chặn. Kích hoạt GPS giả lập để đặt điểm đi tại Tòa thị chính Suwon và trải nghiệm ngay tính năng dẫn đường.",
+                gps_virtual_btn: "Kích hoạt GPS giả lập (Suwon)",
+                gps_retry_btn: "Thử lại GPS thiết bị",
+                gps_close_btn: "Đóng"
+            },
+            th: {
+                app_title: "K-MATE",
+                welcome: "ผู้ช่วยส่วนตัวอัจฉริยะ",
+                welcome_subtitle: "สะดวก รวดเร็ว ปลอดภัย ทุกวัน!",
+                menu_nav: "ระบบนำทาง",
+                menu_nav_desc: "ค้นหาและนำทางด้วยแผนที่จริง",
+                menu_pay: "ระบบชำระเงิน",
+                menu_transit: "ข้อมูลการเดินทาง",
+                menu_transit_desc: "เช็กเวลารถประจำทางและรถไฟฟ้า",
+                menu_complain: "แจ้งเรื่องร้องเรียน center",
+                menu_complain_desc: "แจ้งปัญหาสาธารณะรวดเร็ว",
+                sub_menu_title: "เมนูแจ้งเรื่องร้องเรียน",
+                sub_easy_report: "แจ้งเรื่องร้องเรียนด่วน",
+                sub_easy_report_desc: "แจ้งเรื่องทันทีด้วยรูปถ่ายและข้อมูล",
+                sub_report_status: "ติดตามสถานะเรื่องร้องเรียน",
+                sub_report_status_desc: "ตรวจสอบความคืบหน้าและการแก้ไข",
+                emergency_hotline: "สายด่วนความปลอดภัยฉุกเฉิน (112)",
+                form_category: "ประเภทเรื่องร้องเรียน",
+                form_location: "สถานที่เกิดเหตุ",
+                form_desc: "รายละเอียดคำร้องเรียน",
+                form_photo: "แนบรูปถ่ายหลักฐาน",
+                form_photo_upload: "แตะเพื่ออัปโหลดรูปภาพในพื้นที่",
+                form_photo_limit: "JPG, PNG (สูงสุด 10MB)",
+                btn_submit: "ส่งฟอร์มร้องเรียน",
+                toast_submit_success: "ส่งคำร้องเรียนของคุณเรียบร้อยแล้ว!",
+                cat_road: "ชำรุดบนถนนและทางเท้า",
+                cat_env: "ขยะและสุขอนามัยสาธารณะ",
+                cat_safety: "ไฟถนนเสียและจุดอันตราย",
+                cat_etc: "คำร้องเรียนทั่วไป",
+                status_received: "ได้รับเรื่องแล้ว",
+                status_reviewing: "อยู่ระหว่างตรวจสอบ",
+                status_completed: "แก้ไขเรียบร้อยแล้ว",
+                no_complaints: "ไม่พบประวัติการร้องเรียนที่ลงทะเบียนไว้",
+                placeholder_location: "เช่น ใกล้ป้ายรถเมล์ศาลากลาง 123",
+                placeholder_desc: "โปรดระบุรายละเอียดปัญหาที่นี่เพื่อให้ดำเนินการอย่างรวดเร็ว",
+                nav_placeholder: "ใส่ชื่อสถานที่ต้องการค้นหา...",
+                nav_searching: "กำลังค้นหาตำแหน่ง...",
+                nav_route_info: "คำนวณเส้นทางเรียลไทม์เรียบร้อย",
+                nav_start: "เริ่มต้น: สถานีโซล",
+                nav_start_virtual: "เริ่มต้น: ศาลากลางซูวอน",
+                nav_end: "ปลายทาง",
+                nav_dist: "ระยะทาง",
+                nav_time: "เวลาเดินทาง",
+                nav_time_unit_m: "นาที",
+                nav_time_unit_h: "ชั่วโมง",
+                nav_quick_btn: "สถานที่ยอดฮิต",
+                nav_err_no_loc: "ไม่พบสถานที่ที่ต้องการ",
+                nav_start_badge: "จุดเริ่มต้น",
+                nav_dest_badge: "ปลายทาง",
+                nav_active: "กำลังนำทาง",
+                pay_title: "กระเป๋าเงินพลเมือง",
+                pay_balance_label: "ยอดเงินคงเหลือ",
+                pay_barcode_label: "บาร์โค้ด / QR สำหรับชำระเงิน",
+                pay_active_nfc: "เปิดใช้งาน NFC",
+                transit_bus_stop: "ป้ายรถเมล์ซิตี้สแควร์ (ID: 12-345)",
+                transit_bus_101: "รถเมล์สาย 101",
+                transit_bus_7021: "รถเมล์สาย 7021",
+                transit_bound_gangnam: "ไปสถานีกังนัม",
+                transit_bound_jongno: "ไปชงโน 3-กา",
+                transit_status_1stop: "2 นาที (เหลือ 1 ป้าย)",
+                transit_status_3stops: "7 นาที (เหลือ 3 ป้าย)",
+                transit_subway_station: "สถานีศาลากลาง (สาย 3)",
+                transit_subway_line3: "สาย 3",
+                transit_subway_bound: "ไปอิมซาน",
+                transit_subway_status: "กำลังเข้าเทียบชานชาลา",
+                gps_btn: "ตำแหน่งของฉัน (GPS)",
+                gps_allowed: "ตั้งค่าตำแหน่งจริงของคุณเป็นจุดเริ่มต้นเรียบร้อย",
+                gps_denied: "ไม่สามารถรับพิกัด GPS เนื่องจากข้อจำกัดความปลอดภัย",
+                gps_virtual_connected: "เปิดใช้งานตำแหน่ง GPS จำลอง (ศาลากลางซูวอน) แล้ว!",
+                transit_search_placeholder: "ค้นหาสายรถเมล์หรือสถานี...",
+                transit_no_search: "ไม่พบข้อมูลรถเมล์หรือสถานีที่ค้นหา",
+                pay_recharge: "เติมเงิน",
+                pay_recharge_title: "เติมเงินกระเป๋าเงิน",
+                pay_recharge_custom: "ระบุจำนวนเงินที่ต้องการเติม (₩)",
+                pay_recharge_btn_confirm: "ยืนยันการเติมเงิน",
+                pay_recharge_success: "เติมเงินเรียบร้อยแล้ว!",
+                pay_recharge_err: "โปรดระบุจำนวนเงินตั้งแต่ 1,000 วอนขึ้นไป",
+                gps_modal_title: "สัญญาณ GPS ถูกจำกัด",
+                gps_modal_reason: "ข้อจำกัดด้านความปลอดภัยของ Sandbox",
+                gps_modal_desc: "ระบบทำงานภายใต้สภาพแวดล้อมจำลองที่ปลอดภัย ซึ่งอาจปิดกั้นการเข้าถึง GPS จริง คุณสามารถเลือกใช้ระบบ GPS จำลอง (เริ่มต้นที่ศาลากลางซูวอน) เพื่อทดสอบการนำทางได้ทันที",
+                gps_virtual_btn: "เปิดใช้งาน GPS จำลอง (ซูวอน)",
+                gps_retry_btn: "ลองใหม่อีกครั้ง",
+                gps_close_btn: "ปิด"
+            },
+            ms: {
+                app_title: "K-MATE",
+                welcome: "PEMBANTU AWAM PINTAR",
+                welcome_subtitle: "Mudah, Pantas & Selamat Setiap Hari!",
+                menu_nav: "Sistem Navigasi",
+                menu_nav_desc: "Cari & Pandu Laluan Peta Sebenar",
+                menu_pay: "Pembayaran Mudah",
+                menu_transit: "Pengangkutan Awam",
+                menu_transit_desc: "Masa Ketibaan Bas & Tren",
+                menu_complain: "Laporan & Aduan",
+                menu_complain_desc: "Penyelesaian Masalah Awam",
+                sub_menu_title: "Menu Komunikasi Aduan",
+                sub_easy_report: "Aduan Awam Mudah",
+                sub_easy_report_desc: "Daftar segera dengan foto & butiran",
+                sub_report_status: "Status Tindakan Aduan",
+                sub_report_status_desc: "Semak status & tindakan susulan",
+                emergency_hotline: "Talian Kecemasan Keselamatan (112)",
+                form_category: "Kategori Aduan",
+                form_location: "Lokasi Kejadian",
+                form_desc: "Keterangan Aduan Terperinci",
+                form_photo: "Lampirkan Gambar Bukti",
+                form_photo_upload: "Ketik untuk muat naik gambar",
+                form_photo_limit: "JPG, PNG (Maks 10MB)",
+                btn_submit: "Hantar Borang Aduan",
+                toast_submit_success: "Aduan anda telah berjaya dihantar!",
+                cat_road: "Kerosakan Jalan & Laluan",
+                cat_env: "Sampah & Kebersihan Awam",
+                cat_safety: "Lampu Rosak & Ancaman Keselamatan",
+                cat_etc: "Lain-lain Cadangan Am",
+                status_received: "Diterima",
+                status_reviewing: "Sedang Diproses",
+                status_completed: "Selesai Tindakan",
+                no_complaints: "Tiada rekod aduan yang didaftarkan.",
+                placeholder_location: "Cth: Berdekatan Perhentian Bas City Hall 123",
+                placeholder_desc: "Sila jelaskan aduan secara terperinci di sini untuk tindakan segera.",
+                nav_placeholder: "Masukkan nama tempat...",
+                nav_searching: "Mencari lokasi...",
+                nav_route_info: "Laluan langsung dikira",
+                nav_start: "Stesen Seoul",
+                nav_start_virtual: "Mula: Dewan Bandaraya Suwon",
+                nav_end: "Tamat",
+                nav_dist: "Jarak",
+                nav_time: "Anggaran Masa",
+                nav_time_unit_m: "minit",
+                nav_time_unit_h: "jam",
+                nav_quick_btn: "Destinasi Pantas",
+                nav_err_no_loc: "Lokasi tidak dijumpai.",
+                nav_start_badge: "MULA",
+                nav_dest_badge: "TAMAT",
+                nav_active: "AKTIF",
+                pay_title: "E-Dompet Warga",
+                pay_balance_label: "Baki E-Dompet",
+                pay_barcode_label: "KOD BAR / QR PEMBAYARAN",
+                pay_active_nfc: "NFC DIAKTIFKAN",
+                transit_bus_stop: "Stesen City Square (ID: 12-345)",
+                transit_bus_101: "Bas 101",
+                transit_bus_7021: "Bas 7021",
+                transit_bound_gangnam: "Ke Stesen Gangnam",
+                transit_bound_jongno: "Ke Jongno 3-ga",
+                transit_status_1stop: "2 Minit (1 hentian lagi)",
+                transit_status_3stops: "7 Minit (3 hentian lagi)",
+                transit_subway_station: "Metro City Hall (Laluan 3)",
+                transit_subway_line3: "Laluan 3",
+                transit_subway_bound: "Hala ke Ilsan",
+                transit_subway_status: "Menghampiri Stesen",
+                gps_btn: "Lokasi Saya (GPS)",
+                gps_allowed: "Lokasi GPS sebenar ditetapkan sebagai titik permulaan.",
+                gps_denied: "Gagal mendapatkan lokasi GPS kerana kekangan keselamatan.",
+                gps_virtual_connected: "GPS Maya (Dewan Bandaraya Suwon) berjaya disambungkan!",
+                transit_search_placeholder: "Cari nombor bas atau nama stesen...",
+                transit_no_search: "Tiada laluan atau stesen yang sepadan.",
+                pay_recharge: "Isi Semula",
+                pay_recharge_title: "Isi Semula Baki",
+                pay_recharge_custom: "Masukkan jumlah (₩)",
+                pay_recharge_btn_confirm: "Sahkan Isi Semula",
+                pay_recharge_success: "E-Dompet Berjaya Diisi Semula!",
+                pay_recharge_err: "Sila masukkan jumlah 1,000 KRW ke atas.",
+                gps_modal_title: "Isyarat GPS Disekat",
+                gps_modal_reason: "Sekatan Iframe Sandbox Keselamatan",
+                gps_modal_desc: "Persekitaran ini berjalan di dalam iframe selamat, yang menyekat pertanyaan GPS peranti sebenar. Anda boleh mengaktifkan GPS Maya untuk menetapkan titik permulaan ke Dewan Bandaraya Suwon untuk menguji navigasi segera.",
+                gps_virtual_btn: "Aktifkan GPS Maya (Suwon)",
+                gps_retry_btn: "Cuba Semula GPS Peranti",
+                gps_close_btn: "Tutup"
+            },
+            id: {
+                app_title: "K-MATE",
+                welcome: "ASISTEN WARGA PINTAR",
+                welcome_subtitle: "Layanan Cepat & Praktis Setiap Hari!",
+                menu_nav: "Sistem Navigasi",
+                menu_nav_desc: "Cari Tempat di Peta Real-world",
+                menu_pay: "Pembayaran Mudah",
+                menu_transit: "Transportasi Umum",
+                menu_transit_desc: "Informasi Bus & Kereta Real-time",
+                menu_complain: "Layanan Pengaduan",
+                menu_complain_desc: "Solusi Cepat Keluhan Warga",
+                sub_menu_title: "Menu Komunikasi Pengaduan",
+                sub_easy_report: "Lapor Keluhan Cepat",
+                sub_easy_report_desc: "Kirim aduan instan dengan foto",
+                sub_report_status: "Status Proses Pengaduan",
+                sub_report_status_desc: "Pantau status & hasil penanganan",
+                emergency_hotline: "Panggilan Darurat Keamanan (112)",
+                form_category: "Kategori Pengaduan",
+                form_location: "Lokasi Masalah",
+                form_desc: "Deskripsi Detail Laporan",
+                form_photo: "Unggah Foto Bukti",
+                form_photo_upload: "Ketuk untuk mengambil/unggah foto",
+                form_photo_limit: "JPG, PNG (Maks 10MB)",
+                btn_submit: "Kirim Formulir Laporan",
+                toast_submit_success: "Laporan Anda berhasil dikirim!",
+                cat_road: "Kerusakan Jalan & Fasilitas",
+                cat_env: "Masalah Sampah & Kebersihan",
+                cat_safety: "Lampu Mati & Risiko Keamanan",
+                cat_etc: "Saran Umum Lainnya",
+                status_received: "Diterima",
+                status_reviewing: "Dalam Proses",
+                status_completed: "Selesai Ditangani",
+                no_complaints: "Belum ada laporan pengaduan terdaftar.",
+                placeholder_location: "Misal: Dekat Halte Bus Balai Kota 123",
+                placeholder_desc: "Harap jelaskan masalah secara detail di sini agar segera ditangani.",
+                nav_placeholder: "Cari tempat di sini...",
+                nav_searching: "Mencari alamat...",
+                nav_route_info: "Rute waktu nyata berhasil dibuat",
+                nav_start: "Stasiun Seoul",
+                nav_start_virtual: "Mula: Balai Kota Suwon",
+                nav_end: "Tujuan",
+                nav_dist: "Jarak",
+                nav_time: "Estimasi Waktu",
+                nav_time_unit_m: "menit",
+                nav_time_unit_h: "jam",
+                nav_quick_btn: "Rekomendasi Tempat",
+                nav_err_no_loc: "Tempat tidak ditemukan.",
+                nav_start_badge: "MULAI",
+                nav_dest_badge: "TUJUAN",
+                nav_active: "AKTIF GPS",
+                pay_title: "E-Dompet Warga",
+                pay_balance_label: "Saldo E-Wallet",
+                pay_barcode_label: "KODE BATANG / QR PEMBAYARAN",
+                pay_active_nfc: "NFC AKTIF",
+                transit_bus_stop: "Halte City Square (ID: 12-345)",
+                transit_bus_101: "Bus 101",
+                transit_bus_7021: "Bus 7021",
+                transit_bound_gangnam: "Ke Stasiun Gangnam",
+                transit_bound_jongno: "Ke Jongno 3-ga",
+                transit_status_1stop: "2 Menit (1 halte lagi)",
+                transit_status_3stops: "7 Menit (3 halte lagi)",
+                transit_subway_station: "Metro Balai Kota (Jalur 3)",
+                transit_subway_line3: "Jalur 3",
+                transit_subway_bound: "Menuju Ilsan",
+                transit_subway_status: "Mendekati Stasiun",
+                gps_btn: "Lokasi Saya (GPS)",
+                gps_allowed: "Lokasi asli Anda telah diatur sebagai titik awal.",
+                gps_denied: "Gagal mendapatkan lokasi GPS karena batasan keamanan.",
+                gps_virtual_connected: "GPS Virtual (Balai Kota Suwon) berhasil diaktifkan!",
+                transit_search_placeholder: "Cari nomor bus atau nama stasiun...",
+                transit_no_search: "Tidak ada rute atau stasiun yang cocok.",
+                pay_recharge: "Isi Ulang",
+                pay_recharge_title: "Isi Ulang Saldo",
+                pay_recharge_custom: "Masukkan jumlah (₩)",
+                pay_recharge_btn_confirm: "Konfirmasi Isi Ulang",
+                pay_recharge_success: "Dompet berhasil diisi ulang!",
+                pay_recharge_err: "Masukkan jumlah minimal 1.000 KRW.",
+                gps_modal_title: "Sinyal GPS Diblokir",
+                gps_modal_reason: "Batasan Keamanan Sandbox Iframe",
+                gps_modal_desc: "Sistem berjalan di lingkungan Sandbox, yang dapat memблокировать GPS asli peranti. Aktifkan GPS Virtual untuk menyetel lokasi awal di Balai Kota Suwon untuk menguji rute segera.",
+                gps_virtual_btn: "Aktifkan GPS Virtual (Suwon)",
+                gps_retry_btn: "Ulangi GPS Perangkat",
+                gps_close_btn: "Tutup"
+            },
+            fil: {
+                app_title: "K-MATE",
+                welcome: "SMART CIVIC ASSISTANT",
+                welcome_subtitle: "Mabilis at tiện lợi na serbisyo!",
+                menu_nav: "Nabigasyon",
+                menu_nav_desc: "Maghanap ng tunay na lugar sa mapa",
+                menu_pay: "Madaling Pagbayad",
+                menu_transit: "Impormasyon sa Byahe",
+                menu_transit_desc: "Oras ng Bus at Subway",
+                menu_complain: "Sumbong at Reklamo",
+                menu_complain_desc: "Mabilis na pagtugon sa problema",
+                sub_menu_title: "Menu para sa Reklamo",
+                sub_easy_report: "Mabilis na Sumbong",
+                sub_easy_report_desc: "I-rehistro agad gamit ang larawan",
+                sub_report_status: "Katayuan ng Reklamo",
+                sub_report_status_desc: "Subaybayan ang aksyon at resulta",
+                emergency_hotline: "Emergency Safety Hotline (112)",
+                form_category: "Kategorya ng Sumbong",
+                form_location: "Lokasyon ng Problema",
+                form_desc: "Detalye ng Reklamo",
+                form_photo: "Maglakip ng Larawan/Katibayan",
+                form_photo_upload: "I-tap para mag-upload ng larawan",
+                form_photo_limit: "JPG, PNG (Max 10MB)",
+                btn_submit: "Isumite ang Reklamo",
+                toast_submit_success: "Matagumpay na naisumite ang iyong sumbong!",
+                cat_road: "Sira sa Daan at Trapiko",
+                cat_env: "Basura at Kalinisan",
+                cat_safety: "Sira na Ilaw at Panganib sa Kaligtasan",
+                cat_etc: "Iba pang Rekomendasyon",
+                status_received: "Natanggap na",
+                status_reviewing: "Pinoproseso na",
+                status_completed: "Naresolba na",
+                no_complaints: "Walang nahanap na nakarehistrong sumbong.",
+                placeholder_location: "Hal: Malapit sa City Hall Bus Stop 123",
+                placeholder_desc: "Mangyaring ilagay ang detalye ng isyu dito para sa mabilis na tugon.",
+                nav_placeholder: "I-type ang lugar na hahanapin...",
+                nav_searching: "Hinahanap ang lokasyon...",
+                nav_route_info: "Nagawa na ang ruta",
+                nav_start: "Seoul Station",
+                nav_start_virtual: "Simula: Suwon City Hall",
+                nav_end: "Destinasyon",
+                nav_dist: "Distansya",
+                nav_time: "Oras ng Byahe",
+                nav_time_unit_m: "minuto",
+                nav_time_unit_h: "oras",
+                nav_quick_btn: "Sikat na Lugar",
+                nav_err_no_loc: "Hindi mahanap ang lokasyon.",
+                nav_start_badge: "SIMULA",
+                nav_dest_badge: "DESTINASYON",
+                nav_active: "NAGLALAYAG GPS",
+                pay_title: "E-Wallet ng Mamamayan",
+                pay_balance_label: "Saldong Wallet",
+                pay_barcode_label: "BARCODE / QR PARA SA PAGBAYAD",
+                pay_active_nfc: "AKTIBO ANG NFC",
+                transit_bus_stop: "City Square Station (ID: 12-345)",
+                transit_bus_101: "Bus 101",
+                transit_bus_7021: "Bus 7021",
+                transit_bound_gangnam: "Papuntang Gangnam Stn",
+                transit_bound_jongno: "Papuntang Jongno 3-ga",
+                transit_status_1stop: "2 Min (1 stop na lang)",
+                transit_status_3stops: "7 Min (3 stops na lang)",
+                transit_subway_station: "City Hall Metro (Line 3)",
+                transit_subway_line3: "Linya 3",
+                transit_subway_bound: "Papuntang Ilsan",
+                transit_subway_status: "Malapit Na",
+                gps_btn: "Aking Lokasyon (GPS)",
+                gps_allowed: "Ang iyong tunay na lokasyon ay naging simula ng ruta.",
+                gps_denied: "Hindi nakuha ang GPS dahil sa restriksyon sa seguridad.",
+                gps_virtual_connected: "Matagumpay na naikonekta ang Virtual GPS (Suwon City Hall)!",
+                transit_search_placeholder: "I-type ang ruta o stasyon...",
+                transit_no_search: "Walang katugmang ruta.",
+                pay_recharge: "Mag-load",
+                pay_recharge_title: "Mag-load ng E-Wallet",
+                pay_recharge_custom: "Ilagay ang halaga (₩)",
+                pay_recharge_btn_confirm: "Kumpirmahin",
+                pay_recharge_success: "Matagumpay na naloadan ang wallet!",
+                pay_recharge_err: "Kailangan ng hindi bababa sa 1,000 KRW.",
+                gps_modal_title: "Harang ang GPS Signal",
+                gps_modal_reason: "Sandbox Iframe Security Constraint",
+                gps_modal_desc: "Tumatakbo ang system sa secure Sandbox na humaharang sa tunay na GPS. Maaari mong gamitin ang Virtual GPS para magsimula sa Suwon City Hall upang masubukan ang nabigasyon.",
+                gps_virtual_btn: "Gamitin ang Virtual GPS (Suwon)",
+                gps_retry_btn: "Subukan Uli ang GPS",
+                gps_close_btn: "Isara"
+            },
+            ru: {
+                app_title: "K-MATE",
+                welcome: "УМНЫЙ ГОРОДСКОЙ ПОМОЩНИК",
+                welcome_subtitle: "Удобно, быстро и безопасно каждый день!",
+                menu_nav: "Навигация",
+                menu_nav_desc: "Реальный поиск адресов на карте",
+                menu_pay: "Легкая оплата",
+                menu_transit: "Транспорт онлайн",
+                menu_transit_desc: "Расписание автобусов и метро",
+                menu_complain: "Подача жалоб",
+                menu_complain_desc: "Быстрое решение коммунальных проблем",
+                sub_menu_title: "Меню работы с жалобами",
+                sub_easy_report: "Быстрая подача жалобы",
+                sub_easy_report_desc: "Отправка заявки с фото в пару кликов",
+                sub_report_status: "Статус рассмотрения",
+                sub_report_status_desc: "Отслеживание процесса и результатов",
+                emergency_hotline: "Экстренная служба спасения (112)",
+                form_category: "Категория обращения",
+                form_location: "Место происшествия",
+                form_desc: "Подробное описание проблемы",
+                form_photo: "Прикрепить фотоподтверждение",
+                form_photo_upload: "Нажмите для загрузки фото с места",
+                form_photo_limit: "JPG, PNG (Макс 10МБ)",
+                btn_submit: "Отправить заявление",
+                toast_submit_success: "Ваше обращение успешно зарегистрировано!",
+                cat_road: "Повреждения дорог и знаков",
+                cat_env: "Мусор и общественная гигиена",
+                cat_safety: "Неисправное освещение и угрозы безопасности",
+                cat_etc: "Другие общие пожелания",
+                status_received: "Принято",
+                status_reviewing: "В работе",
+                status_completed: "Выполнено",
+                no_complaints: "Зарегистрированных жалоб не найдено.",
+                placeholder_location: "Пример: около автобусной остановки Сити-Холл 123",
+                placeholder_desc: "Пожалуйста, подробно опишите проблему здесь для быстрого ответа.",
+                nav_placeholder: "Поиск места на карте...",
+                nav_searching: "Поиск адреса...",
+                nav_route_info: "Маршрут успешно построен",
+                nav_start: "Вокзал Сеул",
+                nav_start_virtual: "Старт: Мэрия Сувона",
+                nav_end: "Финиш",
+                nav_dist: "Дистанция",
+                nav_time: "Время в пути",
+                nav_time_unit_m: "мин",
+                nav_time_unit_h: "ч",
+                nav_quick_btn: "Быстрый выбор",
+                nav_err_no_loc: "Местоположение не найдено.",
+                nav_start_badge: "СТАРТ",
+                nav_dest_badge: "ФИНИШ",
+                nav_active: "GPS АКТИВЕН",
+                pay_title: "Платежи граждан",
+                pay_balance_label: "Баланс кошелька",
+                pay_barcode_label: "ШТРИХКОД / QR ДЛЯ ОПЛАТЫ",
+                pay_active_nfc: "NFC АКТИВЕН",
+                transit_bus_stop: "Остановка Сити-Сквер (ID: 12-345)",
+                transit_bus_101: "Автобус 101",
+                transit_bus_7021: "Автобус 7021",
+                transit_bound_gangnam: "В сторону ст. Каннам",
+                transit_bound_jongno: "В сторону Чонно 3-га",
+                transit_status_1stop: "2 мин (1 остановка до)",
+                transit_status_3stops: "7 мин (3 остановки до)",
+                transit_subway_station: "Метро Сити-Холл (Линия 3)",
+                transit_subway_line3: "Линия 3",
+                transit_subway_bound: "В сторону Ильсана",
+                transit_subway_status: "Приближается",
+                gps_btn: "Моя геопозиция (GPS)",
+                gps_allowed: "Реальное местоположение установлено в качестве отправной точки.",
+                gps_denied: "Не удалось получить GPS из-за ограничений безопасности.",
+                gps_virtual_connected: "Виртуальный GPS (Мэрия Сувона) успешно подключен!",
+                transit_search_placeholder: "Поиск автобуса или станции...",
+                transit_no_search: "Маршрутов или станций не найдено.",
+                pay_recharge: "Пополнить",
+                pay_recharge_title: "Пополнение баланса",
+                pay_recharge_custom: "Введите сумму (₩)",
+                pay_recharge_btn_confirm: "Подтвердить пополнение",
+                pay_recharge_success: "Баланс кошелька успешно пополнен!",
+                pay_recharge_err: "Введите сумму не менее 1 000 вон.",
+                gps_modal_title: "GPS-сигнал заблокирован",
+                gps_modal_reason: "Ограничения безопасности Sandbox Iframe",
+                gps_modal_desc: "Эта среда запущенна в защищенном фрейме (Sandbox), который блокирует реальный GPS. Включите Виртуальный GPS, чтобы запустить маршрут от Мэрии Сувона.",
+                gps_virtual_btn: "Включить Виртуальный GPS (Сувон)",
+                gps_retry_btn: "Повторить GPS устройства",
+                gps_close_btn: "Закрыть"
+            },
+            mn: {
+                app_title: "K-MATE",
+                welcome: "УХААЛАГ ТУСЛАХ",
+                welcome_subtitle: "Өдөр бүр амар, хурдан, аюулгүй!",
+                menu_nav: "Навигаци",
+                menu_nav_desc: "Бодит газрын зураг, байршил хайх",
+                menu_pay: "Хялбар төлбөр",
+                menu_transit: "Нийтийн тээвэр",
+                menu_transit_desc: "Автобус, метроны цагийн хуваарь",
+                menu_complain: "Санал гомдол",
+                menu_complain_desc: "Иргэдийн асуудлыг түргэн шийдвэрлэх",
+                sub_menu_title: "Санал гомдлын дэд цэс",
+                sub_easy_report: "Хялбар гомдол гаргах",
+                sub_easy_report_desc: "Зураг болон мэдээллээр шууд бүртгүүлэх",
+                sub_report_status: "Шийдвэрлэлтийн явц",
+                sub_report_status_desc: "Хүлээн авсан явц болон үр дүнг хянах",
+                emergency_hotline: "Яаралтай тусламжийн утас (112)",
+                form_category: "Гомдлын ангилал",
+                form_location: "Асуудал гарсан байршил",
+                form_desc: "Дэлгэрэнгүй тайлбар",
+                form_photo: "Нотлох баримт / Зураг хавсаргах",
+                form_photo_upload: "Дарж зураг оруулах",
+                form_photo_limit: "JPG, PNG (Макс 10МБ)",
+                btn_submit: "Өргөдөл илгээх",
+                toast_submit_success: "Таны санал гомдлыг амжилттай бүртгэлээ!",
+                cat_road: "Зам болон замын тэмдэглэгээний эвдрэл",
+                cat_env: "Хог хаягдал, эрүүл ахуйн асуудал",
+                cat_safety: "Гудамж гэрэл, аюулгүй байдал",
+                cat_etc: "Бусад ерөнхий санал хүсэлт",
+                status_received: "Хүлээн авсан",
+                status_reviewing: "Хянагдаж байгаа",
+                status_completed: "Шийдвэрлэсэн",
+                no_complaints: "Бүртгэгдсэн санал гомдол байхгүй байна.",
+                placeholder_location: "Жишээ: Хотын захиргааны 123-р автобусны буудлын дэргэд",
+                placeholder_desc: "Шуурхай шийдвэрлэхийн тулд асуудлыг энд дэлгэрэнгүй бичнэ үү.",
+                nav_placeholder: "Хайх газрын нэр...",
+                nav_searching: "Байршил хайж байна...",
+                nav_route_info: "Бодит чиглэл боловсрууллаа",
+                nav_start: "Сөүл вокзал",
+                nav_start_virtual: "Эхлэх: Сувон хотын захиргаа",
+                nav_end: "Хүрэх",
+                nav_dist: "Зай",
+                nav_time: "Хугацаа",
+                nav_time_unit_m: "минут",
+                nav_time_unit_h: "цаг",
+                nav_quick_btn: "Санал болгох газар",
+                nav_err_no_loc: "Байршил олдсонгүй.",
+                nav_start_badge: "ЭХЛЭХ",
+                nav_dest_badge: "ХҮРЭХ",
+                nav_active: "GPS ИДЭВХТЭЙ",
+                pay_title: "Иргэдийн хэтэвч",
+                pay_balance_label: "Дансны үлдэгдэл",
+                pay_barcode_label: "ТӨЛБӨРИЙН БАРКОД / QR КОД",
+                pay_active_nfc: "NFC ИДЭВХТЭЙ",
+                transit_bus_stop: "Хотын талбайн буудал (ID: 12-345)",
+                transit_bus_101: "Автобус 101",
+                transit_bus_7021: "Автобус 7021",
+                transit_bound_gangnam: "Гангнам чиглэлд",
+                transit_bound_jongno: "Жонно 3-га чиглэлд",
+                transit_status_1stop: "2 минут (1 буудлын өмнө)",
+                transit_status_3stops: "7 минут (3 буудлын өมнө)",
+                transit_subway_station: "Сити холл метро (3-р шугам)",
+                transit_subway_line3: "3号线",
+                transit_subway_bound: "Илсан чиглэлд",
+                transit_subway_status: "Ойртож байна",
+                gps_btn: "Миний байршил (GPS)",
+                gps_allowed: "Бодит байршлыг эхлэх цэгээр тохирууллаа.",
+                gps_denied: "Аюулгүй байдлын хязгаарлалтаас болж GPS байршил авч чадсангүй.",
+                gps_virtual_connected: "Хиймэл GPS (Сувон хотын захиргаа) амжилттай холбогдлоо!",
+                transit_search_placeholder: "Автобусны чиглэл эсвэл буудал хайх...",
+                transit_no_search: "Тохирох чиглэл олдсонгүй.",
+                pay_recharge: "Цэнэглэх",
+                pay_recharge_title: "Данс цэнэглэх",
+                pay_recharge_custom: "Цэнэглэх дүн (₩)",
+                pay_recharge_btn_confirm: "Цэнэглэлтийг баталгаажуулах",
+                pay_recharge_success: "Данс амжилттай цэнэглэгдлээ!",
+                pay_recharge_err: "1,000 воноос дээш дүн оруулна уу.",
+                gps_modal_title: "GPS дохио хязгаарлагдсан",
+                gps_modal_reason: "Sandbox хамгаалалтын хязгаарлалт",
+                gps_modal_desc: "Аюулгүй хамгаалалттай орчинд ажиллаж байгаа тул бодит GPS дохиог хаасан байж болзошгүй. Та хиймэл GPS-ийг идэвхжүүлэн навигацийг шууд турших боломжтой.",
+                gps_virtual_btn: "Хиймэл GPS идэвхжүүлэх (Сувон)",
+                gps_retry_btn: "Дахин оролдох",
+                gps_close_btn: "Хаах"
+            }
+        };
+
+        // 🌟 싱글 페이지 앱 화면 전환 유틸리티 함수 🌟
+        function showScreen(screenId) {
+            const screens = ['lang-screen', 'main-screen', 'easy-complaint-screen', 'status-complaint-screen', 'mock-screen'];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === screenId) {
+                        el.classList.remove('hidden');
+                        el.classList.add('fade-in');
+                    } else {
+                        el.classList.add('hidden');
+                        el.classList.remove('fade-in');
+                    }
+                }
+            });
+        }
+
+        // 1. 언어 선택 및 전체 렌더링 동기화 함수
+        function selectLanguage(lang) {
+            currentLang = lang;
+            
+            // 전역 번역
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[lang] && translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+
+            // 플레이스홀더들 대응
+            const locInput = document.getElementById('comp-location');
+            if (locInput && translations[lang]['placeholder_location']) {
+                locInput.placeholder = translations[lang]['placeholder_location'];
+            }
+            const descInput = document.getElementById('comp-desc');
+            if (descInput && translations[lang]['placeholder_desc']) {
+                descInput.placeholder = translations[lang]['placeholder_desc'];
+            }
+
+            // 카테고리 옵션 번역
+            const options = document.getElementById('comp-category').options;
+            options[0].text = translations[lang]['cat_road'];
+            options[1].text = translations[lang]['cat_env'];
+            options[2].text = translations[lang]['cat_safety'];
+            options[3].text = translations[lang]['cat_etc'];
+
+            // 뱃지 및 메인 정보 노출
+            const langNames = { 
+                ko: '한국어', en: 'English', ja: '日本語', zh: '简体中文', zt: '繁體中文', 
+                vi: 'Tiếng Việt', th: 'ภาษาไทย', ms: 'B. Melayu', id: 'B. Indonesia', 
+                fil: 'Tagalog', ru: 'Русский', mn: 'Монгол' 
+            };
+            document.getElementById('current-lang-badge').textContent = langNames[lang];
+            updatePayUI(); // 페이 잔액 포맷팅 갱신
+
+            // 화면 전환 제어 (showScreen 활용으로 중첩 버그 철저히 예방)
+            if (previousScreen === 'easy-complaint') {
+                openEasyComplaintForm();
+            } else if (previousScreen === 'status-complaint') {
+                openComplaintStatus();
+            } else if (previousScreen === 'mock' && activeService) {
+                openMockScreen(activeService);
+            } else {
+                showScreen('main-screen');
+            }
+
+            const changeMsgs = {
+                ko: '한국어로 변경되었습니다.', en: 'Switched to English.', ja: '日本語に変更されました。',
+                zh: '已切换至简体中文。', zt: '已切換至繁體中文。', vi: 'Đã chuyển sang Tiếng Việt.',
+                th: 'เปลี่ยนเป็นภาษาไทยแล้ว', ms: 'Ditukar kepada Bahasa Melayu.', id: 'Bahasa Indonesia diaktifkan.',
+                fil: 'Naipalit na sa Tagalog.', ru: 'Язык изменен на Русский.', mn: 'Монгол хэл рүү шилжлээ.'
+            };
+            showToast(changeMsgs[lang] || 'Language updated.');
+        }
+
+        // 지갑 잔액 표시 최신화
+        function updatePayUI() {
+            const formatted = payBalance.toLocaleString();
+            const label = translations[currentLang]['pay_balance_label'] || 'Balance';
+            document.getElementById('dash-pay-desc').textContent = `${label}: ₩ ${formatted}`;
+        }
+
+        function goToLanguageSelect() {
+            // 언어 선택으로 이행하기 전, 현재 활성화되어 구동되던 서브 스크린 기억장치 작동
+            if (!document.getElementById('easy-complaint-screen').classList.contains('hidden')) {
+                previousScreen = 'easy-complaint';
+            } else if (!document.getElementById('status-complaint-screen').classList.contains('hidden')) {
+                previousScreen = 'status-complaint';
+            } else if (!document.getElementById('mock-screen').classList.contains('hidden')) {
+                previousScreen = 'mock';
+            } else {
+                previousScreen = 'main';
+            }
+
+            showScreen('lang-screen');
+        }
+
+        function toggleComplaintMenu() {
+            const subMenu = document.getElementById('complaint-sub-menu');
+            const complainBtn = document.getElementById('complain-btn');
+
+            if (isComplaintSubMenuOpen) {
+                subMenu.classList.add('hidden');
+                complainBtn.classList.remove('ring-4', 'ring-red-100', 'border-red-400');
+                isComplaintSubMenuOpen = false;
+            } else {
+                subMenu.classList.remove('hidden');
+                subMenu.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                complainBtn.classList.add('ring-4', 'ring-red-100', 'border-red-400');
+                isComplaintSubMenuOpen = true;
+            }
+        }
+
+        function backToDashboard() {
+            if (navMap) {
+                navMap.remove();
+                navMap = null;
+                startMarker = null;
+                destMarker = null;
+                routeLine = null;
+            }
+
+            previousScreen = 'main';
+            activeService = null;
+            showScreen('main-screen');
+        }
+
+        function openEasyComplaintForm() {
+            showScreen('easy-complaint-screen');
+            document.getElementById('complaint-form').reset();
+            clearPreview(null);
+        }
+
+        function openComplaintStatus() {
+            showScreen('status-complaint-screen');
+            renderComplaints();
+        }
+
+        function renderComplaints() {
+            const listContainer = document.getElementById('complaint-list');
+            listContainer.innerHTML = '';
+
+            if (complaints.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-8 text-slate-400 space-y-2 bg-white rounded-2xl border border-slate-100">
+                        <i data-lucide="folder-open" class="w-12 h-12 text-slate-300"></i>
+                        <p class="text-sm font-medium" data-translate="no_complaints">${translations[currentLang]['no_complaints'] || 'No Complaints'}</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            complaints.forEach((comp) => {
+                let badgeColor = '';
+                let statusText = '';
+                let progressPercent = 'w-1/3';
+                
+                switch(comp.status) {
+                    case 'received':
+                        badgeColor = 'bg-blue-50 text-blue-600 border-blue-100';
+                        statusText = translations[currentLang]['status_received'];
+                        progressPercent = 'w-[15%] bg-blue-500';
+                        break;
+                    case 'reviewing':
+                        badgeColor = 'bg-amber-50 text-amber-600 border-amber-100';
+                        statusText = translations[currentLang]['status_reviewing'];
+                        progressPercent = 'w-[60%] bg-amber-500';
+                        break;
+                    case 'completed':
+                        badgeColor = 'bg-emerald-50 text-emerald-600 border-emerald-100';
+                        statusText = translations[currentLang]['status_completed'];
+                        progressPercent = 'w-full bg-emerald-500';
+                        break;
+                }
+
+                let catText = comp.category;
+                if (comp.category === '도로/교통') catText = translations[currentLang]['cat_road'];
+                if (comp.category === '환경/위생') catText = translations[currentLang]['cat_env'];
+                if (comp.category === '안전/재해') catText = translations[currentLang]['cat_safety'];
+                if (comp.category === '기타') catText = translations[currentLang]['cat_etc'];
+
+                const locationText = (typeof comp.location === 'object') ? (comp.location[currentLang] || comp.location['ko'] || comp.location['en']) : comp.location;
+                const descText = (typeof comp.desc === 'object') ? (comp.desc[currentLang] || comp.desc['ko'] || comp.desc['en']) : comp.desc;
+
+                const itemHtml = `
+                    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-3.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-slate-400 font-semibold">${comp.id}</span>
+                            <span class="text-xs px-2.5 py-1 rounded-full border ${badgeColor} font-bold">${statusText}</span>
+                        </div>
+                        
+                        <div class="space-y-1.5">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="bg-slate-100 text-[10px] text-slate-600 px-2 py-0.5 rounded font-bold uppercase">${catText}</span>
+                                <span class="text-xs text-slate-400">${comp.date}</span>
+                            </div>
+                            <h4 class="font-bold text-slate-800 text-sm leading-snug">${descText}</h4>
+                            <div class="flex items-center space-x-1 text-slate-500">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 flex-shrink-0 text-slate-400"></i>
+                                <span class="text-xs truncate font-medium">${locationText}</span>
+                            </div>
+                        </div>
+
+                        ${comp.photo ? `
+                            <div class="rounded-xl overflow-hidden border border-slate-100 max-h-36">
+                                <img src="${comp.photo}" alt="민원사진" class="w-full h-auto object-cover">
+                            </div>
+                        ` : ''}
+
+                        <div class="space-y-1">
+                            <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full ${progressPercent} rounded-full transition-all duration-500"></div>
+                            </div>
+                            <div class="flex justify-between text-[9px] font-bold text-slate-400">
+                                <span class="${comp.status === 'received' ? 'text-blue-500' : ''}">${translations[currentLang]['status_received']}</span>
+                                <span class="${comp.status === 'reviewing' ? 'text-amber-500' : ''}">${translations[currentLang]['status_reviewing']}</span>
+                                <span class="${comp.status === 'completed' ? 'text-emerald-500' : ''}">${translations[currentLang]['status_completed']}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                listContainer.insertAdjacentHTML('beforeend', itemHtml);
+            });
+
+            lucide.createIcons();
+        }
+
+        function triggerMockPhoto() {
+            document.getElementById('comp-file').click();
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('photo-placeholder').classList.add('hidden');
+                    const container = document.getElementById('photo-preview-container');
+                    const img = document.getElementById('photo-preview');
+                    
+                    container.classList.remove('hidden');
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearPreview(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('comp-file').value = '';
+            document.getElementById('photo-preview-container').classList.add('hidden');
+            document.getElementById('photo-placeholder').classList.remove('hidden');
+        }
+
+        function submitComplaint(event) {
+            event.preventDefault();
+
+            const category = document.getElementById('comp-category').value;
+            const location = document.getElementById('comp-location').value;
+            const desc = document.getElementById('comp-desc').value;
+            const previewImgSrc = document.getElementById('photo-preview').src;
+            const hasPhoto = !document.getElementById('photo-preview-container').classList.contains('hidden');
+
+            const newComplaint = {
+                id: `CIV-2026-0${complaints.length + 4}`,
+                category: category,
+                location: location,
+                desc: desc,
+                status: 'received',
+                date: new Date().toISOString().split('T')[0],
+                photo: hasPhoto ? previewImgSrc : null
+            };
+
+            complaints.unshift(newComplaint);
+            updateBadgeCount();
+
+            showToast(translations[currentLang]['toast_submit_success']);
+            
+            // 폼 작성화면에서 처리현황 리스트화면으로 숨김/노출 순차 제어전환 작동
+            setTimeout(() => {
+                openComplaintStatus();
+            }, 1000);
+        }
+
+        function updateBadgeCount() {
+            const activeCount = complaints.filter(c => c.status !== 'completed').length;
+            document.getElementById('badge-count').textContent = activeCount;
+        }
+
+        // ==================== [MOCK 서비스 제어 시스템] ====================
+        function openMockScreen(service) {
+            activeService = service;
+            showScreen('mock-screen');
+            const title = document.getElementById('mock-title');
+            const content = document.getElementById('mock-content');
+
+            if (service === 'nav') {
+                title.textContent = translations[currentLang]['menu_nav'];
+                
+                content.innerHTML = `
+                    <div class="flex-1 flex flex-col h-full bg-slate-50 relative animate-fade-in">
+                        <!-- 내비게이션 주소 검색 영역 -->
+                        <div class="p-3 bg-white shadow-sm border-b border-slate-100 z-[10] space-y-2">
+                            <div class="flex items-center space-x-2 relative">
+                                <div class="relative flex-1">
+                                    <input type="text" id="map-search-input" 
+                                           class="w-full pl-9 pr-8 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium text-slate-800" 
+                                           placeholder="${translations[currentLang]['nav_placeholder']}"
+                                           onkeyup="if(event.key === 'Enter') handleMapSearch()">
+                                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                    <button onclick="clearMapSearch()" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                                        <i data-lucide="x" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <button onclick="handleMapSearch()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all transform active:scale-95 flex items-center space-x-1">
+                                    <i data-lucide="navigation-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <!-- 실시간 GPS 활용 버튼 -->
+                                <button onclick="requestRealGPS()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all transform active:scale-95 flex items-center space-x-1">
+                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 animate-pulse"></i>
+                                    <span class="hidden sm:inline">${translations[currentLang]['gps_btn'] || 'GPS'}</span>
+                                </button>
+                            </div>
+
+                            <div class="flex items-center space-x-1 overflow-x-auto py-1 custom-scroll text-[10px]">
+                                <span class="text-slate-400 whitespace-nowrap font-semibold mr-1">${translations[currentLang]['nav_quick_btn']}:</span>
+                                <button onclick="quickSelectSpot('Gyeongbokgung Palace, Seoul', 37.5796, 126.9770)" class="bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 px-2 py-1 rounded-full whitespace-nowrap transition-all font-bold">🏯 ${landmarkNames.palace[currentLang] || landmarkNames.palace['en']}</button>
+                                <button onclick="quickSelectSpot('Incheon International Airport', 37.4602, 126.4407)" class="bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 px-2 py-1 rounded-full whitespace-nowrap transition-all font-bold">✈️ ${landmarkNames.airport[currentLang] || landmarkNames.airport['en']}</button>
+                                <button onclick="quickSelectSpot('N Seoul Tower', 37.5511, 126.9882)" class="bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 px-2 py-1 rounded-full whitespace-nowrap transition-all font-bold">🗼 ${landmarkNames.tower[currentLang] || landmarkNames.tower['en']}</button>
+                                <button onclick="quickSelectSpot('Haeundae Beach, Busan', 35.1587, 129.1604)" class="bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 px-2 py-1 rounded-full whitespace-nowrap transition-all font-bold">🏖️ ${landmarkNames.beach[currentLang] || landmarkNames.beach['en']}</button>
+                            </div>
+                        </div>
+
+                        <div id="map-search-results" class="hidden absolute left-3 right-3 top-28 bg-white border border-slate-100 rounded-xl shadow-xl z-[99] max-h-[180px] overflow-y-auto divide-y divide-slate-50"></div>
+
+                        <div id="interactive-map" class="w-full flex-1 z-[1]"></div>
+
+                        <div id="nav-info-sheet" class="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border border-white/60 shadow-lg z-[10] space-y-2 flex flex-col justify-between hidden animate-fade-in">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-xs tracking-wide uppercase text-blue-600">${translations[currentLang]['nav_route_info']}</h4>
+                                    <p class="text-xs font-bold text-slate-900 mt-1" id="nav-target-name"></p>
+                                </div>
+                                <span class="bg-blue-600 text-white text-[9px] px-2 py-0.5 rounded-full font-extrabold tracking-widest animate-pulse">${translations[currentLang]['nav_active']}</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100/50 text-[11px] font-bold text-slate-500">
+                                <div class="bg-slate-50/50 p-2 rounded-lg">
+                                    <span class="text-slate-400 text-[9px] block mb-0.5">${translations[currentLang]['nav_dist']}</span>
+                                    <span class="text-slate-800 text-sm font-black" id="nav-calc-dist">- km</span>
+                                </div>
+                                <div class="bg-slate-50/50 p-2 rounded-lg">
+                                    <span class="text-slate-400 text-[9px] block mb-0.5">${translations[currentLang]['nav_time']}</span>
+                                    <span class="text-emerald-600 text-sm font-black" id="nav-calc-time">- min</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    initInteractiveMap();
+                }, 100);
+
+            } else if (service === 'pay') {
+                title.textContent = translations[currentLang]['menu_pay'];
+                
+                // 결제 내역 및 가상 충전 액션 스크린
+                content.innerHTML = `
+                    <div class="p-6 space-y-5 flex flex-col h-full bg-slate-50 overflow-y-auto animate-fade-in">
+                        <!-- 지갑 잔고 연동 카드 -->
+                        <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-5 text-white shadow-lg space-y-6 relative overflow-hidden">
+                            <div class="absolute right-[-20px] top-[-20px] text-white/5">
+                                <i data-lucide="wallet" class="w-40 h-40"></i>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-semibold uppercase tracking-wider">${translations[currentLang]['pay_title']}</span>
+                                <span class="bg-white/20 text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase">${translations[currentLang]['pay_active_nfc']}</span>
+                            </div>
+                            <div class="flex items-end justify-between pt-2">
+                                <div>
+                                    <p class="text-xs text-white/70">${translations[currentLang]['pay_balance_label']}</p>
+                                    <h3 class="text-3xl font-black mt-1" id="pay-card-balance">₩ ${payBalance.toLocaleString()}</h3>
+                                </div>
+                                <button onclick="openRechargeModal()" class="bg-white text-emerald-700 px-4 py-2.5 rounded-xl font-bold text-xs shadow-md hover:bg-slate-50 transition-colors transform active:scale-95 flex items-center space-x-1">
+                                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                    <span>${translations[currentLang]['pay_recharge']}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 1회용 결제 바코드 -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm text-center space-y-4">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">${translations[currentLang]['pay_barcode_label']}</p>
+                            <div class="flex items-center justify-center space-x-1 py-4">
+                                <div class="w-1.5 h-16 bg-slate-900 rounded"></div>
+                                <div class="w-3 h-16 bg-slate-900 rounded"></div>
+                                <div class="w-0.5 h-16 bg-slate-900 rounded"></div>
+                                <div class="w-2 h-16 bg-slate-900 rounded"></div>
+                                <div class="w-4 h-16 bg-slate-900 rounded"></div>
+                                <div class="w-1 h-16 bg-slate-900 rounded"></div>
+                                <div class="w-2 h-16 bg-slate-900 rounded"></div>
+                                <div class="w-3 h-16 bg-slate-900 rounded"></div>
+                                <div class="w-1 h-16 bg-slate-900 rounded"></div>
+                                <div class="w-1.5 h-16 bg-slate-900 rounded"></div>
+                            </div>
+                            <p class="font-mono text-sm tracking-widest text-slate-500">8801234 567890</p>
+                        </div>
+                    </div>
+                `;
+            } else if (service === 'transit') {
+                title.textContent = translations[currentLang]['menu_transit'];
+                
+                // 실시간 도착 노선 동적 검색창 렌더링
+                content.innerHTML = `
+                    <div class="p-4 space-y-4 bg-slate-50 h-full flex flex-col overflow-hidden animate-fade-in">
+                        <!-- 버스/지하철 통합 검색 필터 -->
+                        <div class="relative z-10">
+                            <input type="text" id="transit-search-bar" 
+                                   class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-bold text-slate-800 shadow-sm" 
+                                   placeholder="${translations[currentLang]['transit_search_placeholder']}"
+                                   onkeyup="onTransitSearchInput(event)">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+                        </div>
+
+                        <!-- 노선 스크롤 뷰 -->
+                        <div id="transit-list-container" class="flex-1 overflow-y-auto space-y-3 custom-scroll">
+                            <!-- JS를 통해 동적 검색 결과 렌더링 -->
+                        </div>
+                    </div>
+                `;
+                
+                // 첫 로드 시 전체 대중교통 노선 리스트 렌더링
+                filterTransitList();
+            }
+
+            lucide.createIcons();
+        }
+
+        // ==================== [1. 내비게이션 GPS 연동 로직] ====================
+        function initInteractiveMap() {
+            if (navMap) {
+                navMap.remove();
+                navMap = null;
+            }
+
+            // 지도 초기화
+            navMap = L.map('interactive-map', {
+                center: START_COORDS,
+                zoom: 13,
+                zoomControl: false
+            });
+
+            L.control.zoom({ position: 'topright' }).addTo(navMap);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CartoDB'
+            }).addTo(navMap);
+
+            // 출발 마커 생성
+            updateStartMarker();
+
+            // 세션 기억장치 가동: 언어 전환 후 복귀 시 기존 목적지 복원
+            if (lastSearchedDest) {
+                setTimeout(() => {
+                    selectDestination(lastSearchedDest.name, lastSearchedDest.lat, lastSearchedDest.lon);
+                }, 200);
+            }
+        }
+
+        // 출발지 마커 갱신 처리
+        function updateStartMarker(isVirtual = false) {
+            if (!navMap) return;
+            if (startMarker) navMap.removeLayer(startMarker);
+
+            const labelStart = translations[currentLang]['nav_start_badge'] || 'START';
+            const customStartIcon = L.divIcon({
+                html: `<div class="flex items-center justify-center w-8 h-8 bg-blue-600 border-2 border-white rounded-full shadow-lg text-white font-black text-[9px] transform -translate-x-1/2 -translate-y-1/2 animate-pulse">${labelStart}</div>`,
+                className: '',
+                iconSize: [32, 32]
+            });
+
+            startMarker = L.marker(START_COORDS, { icon: customStartIcon }).addTo(navMap);
+            
+            const popupText = isVirtual ? translations[currentLang]['nav_start_virtual'] : translations[currentLang]['nav_start'];
+            startMarker.bindPopup(`<b>${popupText}</b>`).openPopup();
+        }
+
+        // 실제 기기 GPS 수신기 연동 작동 시도
+        function requestRealGPS() {
+            if (!navigator.geolocation) {
+                showGPSOptionModal();
+                return;
+            }
+
+            showToast(translations[currentLang]['nav_searching']);
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    START_COORDS = [lat, lon]; // 출발지 실제 기기 좌표로 갱신
+
+                    // 마커 이동 및 뷰 포커스
+                    updateStartMarker(false);
+                    navMap.setView(START_COORDS, 14);
+
+                    showToast(translations[currentLang]['gps_allowed']);
+
+                    // 목적지가 기존에 세팅되어 있다면 다시 그리기
+                    if (destMarker) {
+                        const dLatLng = destMarker.getLatLng();
+                        selectDestination(document.getElementById('nav-target-name').textContent, dLatLng.lat, dLatLng.lng);
+                    }
+                },
+                (error) => {
+                    console.warn("Real GPS Failed, showing Custom Option modal:", error);
+                    // 차단되거나 실패하면 대체 모달 오픈
+                    showGPSOptionModal();
+                },
+                { enableHighAccuracy: true, timeout: 3500, maximumAge: 0 }
+            );
+        }
+
+        // GPS 실패/차단 수동 선택 모달 제어
+        function showGPSOptionModal() {
+            const modal = document.getElementById('gps-option-modal');
+            modal.classList.remove('hidden');
+            // 모달 내부 텍스트 즉시 언어 동기화
+            modal.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[currentLang] && translations[currentLang][key]) {
+                    el.textContent = translations[currentLang][key];
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function closeGPSModal() {
+            document.getElementById('gps-option-modal').classList.add('hidden');
+        }
+
+        // 가상 GPS (수원시청) 활성화 작동
+        function activateVirtualGPS() {
+            closeGPSModal();
+            // 경기도 수원시청 좌표 세팅 [37.2636, 127.0286]
+            START_COORDS = [37.2636, 127.0286];
+            
+            updateStartMarker(true);
+            navMap.setView(START_COORDS, 14);
+
+            showToast(translations[currentLang]['gps_virtual_connected'] || "Virtual GPS Active!");
+            
+            // 목적지가 있었다면 현재 수원시청 기준으로 실시간 자동 다시 그리기
+            if (destMarker) {
+                const dLatLng = destMarker.getLatLng();
+                selectDestination(document.getElementById('nav-target-name').textContent, dLatLng.lat, dLatLng.lng);
+            }
+        }
+
+        function retryRealGPS() {
+            closeGPSModal();
+            requestRealGPS();
+        }
+
+        async function handleMapSearch() {
+            const query = document.getElementById('map-search-input').value.trim();
+            const resultsBox = document.getElementById('map-search-results');
+            
+            if (!query) return;
+
+            resultsBox.classList.remove('hidden');
+            resultsBox.innerHTML = `<div class="p-3 text-xs text-slate-500 flex items-center space-x-1.5 font-bold"><span class="animate-spin inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full mr-1"></span> ${translations[currentLang]['nav_searching']}</div>`;
+
+            try {
+                const response = await fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(query) + "&limit=5&addressdetails=1");
+                const data = await response.json();
+
+                resultsBox.innerHTML = '';
+                
+                if (data.length === 0) {
+                    resultsBox.innerHTML = `<div class="p-3 text-xs text-red-500 font-bold">${translations[currentLang]['nav_err_no_loc']}</div>`;
+                    return;
+                }
+
+                data.forEach(item => {
+                    const option = document.createElement('div');
+                    option.className = "p-3 text-xs hover:bg-slate-50 cursor-pointer font-semibold text-slate-700 transition-colors border-b border-slate-50 last:border-0";
+                    option.textContent = item.display_name;
+                    option.onclick = () => selectDestination(item.display_name, parseFloat(item.lat), parseFloat(item.lon));
+                    resultsBox.appendChild(option);
+                });
+
+            } catch (error) {
+                resultsBox.innerHTML = `<div class="p-3 text-xs text-red-500 font-bold">API limit. Tap Quick Spot!</div>`;
+            }
+        }
+
+        function clearMapSearch() {
+            document.getElementById('map-search-input').value = '';
+            document.getElementById('map-search-results').classList.add('hidden');
+        }
+
+        function quickSelectSpot(name, lat, lon) {
+            document.getElementById('map-search-input').value = name;
+            selectDestination(name, lat, lon);
+        }
+
+        // 위도/경도 기반 구면 삼각법(Haversine) 수학 연산 적용하여 실제 km 수 도출 및 경로 그리기
+        function selectDestination(name, lat, lon) {
+            document.getElementById('map-search-results').classList.add('hidden');
+
+            const destCoords = [lat, lon];
+            lastSearchedDest = { name, lat, lon }; // 세션 기억장치 업데이트
+
+            if (destMarker) navMap.removeLayer(destMarker);
+            if (routeLine) navMap.removeLayer(routeLine);
+
+            const labelDest = translations[currentLang]['nav_dest_badge'] || 'DEST';
+            const customDestIcon = L.divIcon({
+                html: `<div class="flex items-center justify-center w-8 h-8 bg-red-500 border-2 border-white rounded-full shadow-lg text-white font-black text-[9px] transform -translate-x-1/2 -translate-y-1/2 animate-bounce">${labelDest}</div>`,
+                className: '',
+                iconSize: [32, 32]
+            });
+
+            destMarker = L.marker(destCoords, { icon: customDestIcon }).addTo(navMap);
+            destMarker.bindPopup(`<b>${name}</b>`).openPopup();
+
+            routeLine = L.polyline([START_COORDS, destCoords], {
+                color: '#2563eb',
+                weight: 5,
+                opacity: 0.85,
+                dashArray: '3, 8',
+                lineCap: 'round'
+            }).addTo(navMap);
+
+            navMap.fitBounds(L.latLngBounds([START_COORDS, destCoords]), {
+                padding: [40, 40]
+            });
+
+            const R = 6371;
+            const dLat = (lat - START_COORDS[0]) * Math.PI / 180;
+            const dLon = (lon - START_COORDS[1]) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(START_COORDS[0] * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const rawDistance = R * c;
+
+            let durationMin = Math.round((rawDistance / 40) * 60);
+            if (durationMin < 2) durationMin = 3;
+
+            let distanceStr = rawDistance.toFixed(1) + " km";
+            let durationStr = durationMin + " " + (translations[currentLang]['nav_time_unit_m'] || 'min');
+
+            if (durationMin >= 120) {
+                const hours = Math.floor(durationMin / 60);
+                const remainingMin = durationMin % 60;
+                durationStr = `${hours}${translations[currentLang]['nav_time_unit_h'] || 'h'} ${remainingMin}${translations[currentLang]['nav_time_unit_m'] || 'm'}`;
+            }
+
+            document.getElementById('nav-target-name').textContent = name;
+            document.getElementById('nav-calc-dist').textContent = distanceStr;
+            document.getElementById('nav-calc-time').textContent = durationStr;
+            document.getElementById('nav-info-sheet').classList.remove('hidden');
+
+            showToast((translations[currentLang]['nav_route_info'] || 'Route Calculated') + "!");
+        }
+
+
+        // ==================== [2. 대중교통 동적 실시간 검색/필터 필터링 (다국어 완전 대응)] ====================
+        function onTransitSearchInput(e) {
+            transitSearchQuery = e.target.value;
+            filterTransitList();
+        }
+
+        function filterTransitList() {
+            const container = document.getElementById('transit-list-container');
+            if (!container) return;
+
+            const searchBar = document.getElementById('transit-search-bar');
+            if (searchBar && transitSearchQuery) {
+                searchBar.value = transitSearchQuery;
+            }
+
+            const query = transitSearchQuery.toLowerCase().trim();
+            container.innerHTML = "";
+
+            // 검색 조건에 맞는 버스 목록 선별 (다국어 필드 포괄 검색 지원)
+            const filteredBuses = transitDatabase.bus.filter(b => {
+                const busLineStr = typeof b.line === 'object' ? Object.values(b.line).join(" ") : b.line;
+                const busBoundStr = typeof b.bound === 'object' ? Object.values(b.bound).join(" ") : b.bound;
+                const busStopStr = typeof b.stop === 'object' ? Object.values(b.stop).join(" ") : b.stop;
+                const searchString = `${b.id} ${busLineStr} ${busBoundStr} ${busStopStr}`.toLowerCase();
+                return searchString.includes(query);
+            });
+
+            // 검색 조건에 맞는 지하철 목록 선별
+            const filteredSubways = transitDatabase.subway.filter(s => {
+                const subStationStr = typeof s.station === 'object' ? Object.values(s.station).join(" ") : s.station;
+                const subBoundStr = typeof s.bound === 'object' ? Object.values(s.bound).join(" ") : s.bound;
+                const searchString = `${s.line} ${subStationStr} ${subBoundStr}`.toLowerCase();
+                return searchString.includes(query);
+            });
+
+            if (filteredBuses.length === 0 && filteredSubways.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-8 text-slate-400 space-y-2 bg-white rounded-2xl border border-slate-100 mt-4">
+                        <i data-lucide="compass" class="w-10 h-10 text-slate-300"></i>
+                        <p class="text-xs font-semibold" data-translate="transit_no_search">${translations[currentLang]['transit_no_search'] || 'No Results'}</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            // 버스 렌더링 (다국어 데이터 유연 출력 보완)
+            if (filteredBuses.length > 0) {
+                filteredBuses.forEach(b => {
+                    const lineText = typeof b.line === 'object' ? (b.line[currentLang] || b.line['ko'] || b.line['en']) : b.line;
+                    const stopText = typeof b.stop === 'object' ? (b.stop[currentLang] || b.stop['ko'] || b.stop['en']) : b.stop;
+                    const boundText = typeof b.bound === 'object' ? (b.bound[currentLang] || b.bound['ko'] || b.bound['en']) : b.bound;
+                    const statusText = typeof b.status === 'object' ? (b.status[currentLang] || b.status['ko'] || b.status['en']) : b.status;
+
+                    const busCard = `
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-2.5 animate-fade-in">
+                            <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                                <div class="flex items-center space-x-1.5">
+                                    <div class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                                        <i data-lucide="bus" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="font-bold text-xs text-slate-800">${stopText}</span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="${b.color} text-white text-[9px] font-black px-2 py-0.5 rounded">${lineText}</span>
+                                    <span class="text-xs text-slate-600 font-semibold">${boundText}</span>
+                                </div>
+                                <span class="text-xs font-bold text-red-500 animate-pulse">${statusText}</span>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', busCard);
+                });
+            }
+
+            // 지하철 렌더링 (다국어 데이터 유연 출력 보완)
+            if (filteredSubways.length > 0) {
+                filteredSubways.forEach(s => {
+                    const stationText = typeof s.station === 'object' ? (s.station[currentLang] || s.station['ko'] || s.station['en']) : s.station;
+                    const boundText = typeof s.bound === 'object' ? (s.bound[currentLang] || s.bound['ko'] || s.bound['en']) : s.bound;
+                    const statusText = typeof s.status === 'object' ? (s.status[currentLang] || s.status['ko'] || s.status['en']) : s.status;
+
+                    const subwayCard = `
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-2.5 animate-fade-in">
+                            <div class="flex items-center space-x-1.5 pb-1.5 border-b border-slate-100">
+                                <div class="p-1.5 bg-orange-50 text-orange-500 rounded-lg">
+                                    <i data-lucide="subway" class="w-4 h-4"></i>
+                                </div>
+                                <span class="font-bold text-xs text-slate-800">${stationText}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="${s.color} text-white text-[9px] font-black px-2.5 py-0.5 rounded-full">Line ${s.line}</span>
+                                    <span class="text-xs text-slate-600 font-semibold">${boundText}</span>
+                                </div>
+                                <span class="text-xs font-bold text-red-500 animate-pulse">${statusText}</span>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', subwayCard);
+                });
+            }
+
+            lucide.createIcons();
+        }
+
+
+        // ==================== [3. 페이 및 충전 시스템 로직] ====================
+        function openRechargeModal() {
+            document.getElementById('recharge-custom-input').value = '';
+            
+            const modal = document.getElementById('recharge-modal');
+            modal.classList.remove('hidden');
+            // 다국어 수동 바인딩
+            modal.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[currentLang] && translations[currentLang][key]) {
+                    el.textContent = translations[currentLang][key];
+                }
+            });
+        }
+
+        // 지갑 잔액 표시 최신화
+        function updatePayUI() {
+            const formatted = payBalance.toLocaleString();
+            const label = translations[currentLang]['pay_balance_label'] || 'Balance';
+            document.getElementById('dash-pay-desc').textContent = `${label}: ₩ ${formatted}`;
+        }
+
+        function closeRechargeModal() {
+            document.getElementById('recharge-modal').classList.add('hidden');
+        }
+
+        // 간편 금액 선택 적용
+        function addPresetAmount(amt) {
+            document.getElementById('recharge-custom-input').value = amt;
+        }
+
+        // 실제 충전 프로세스 처리
+        function executeRecharge() {
+            const inputVal = parseInt(document.getElementById('recharge-custom-input').value);
+            
+            if (isNaN(inputVal) || inputVal < 1000) {
+                showToast(translations[currentLang]['pay_recharge_err'] || "Please enter more than 1,000 KRW");
+                return;
+            }
+
+            // 충전 금액 반영 및 갱신
+            payBalance += inputVal;
+            
+            // UI 실시간 업데이트
+            updatePayUI();
+            const payCardBal = document.getElementById('pay-card-balance');
+            if (payCardBal) {
+                payCardBal.textContent = `₩ ${payBalance.toLocaleString()}`;
+                //  충전 성공 시 스케일링 임팩트 효과
+                payCardBal.classList.add('scale-110', 'text-yellow-300');
+                setTimeout(() => {
+                    payCardBal.classList.remove('scale-110', 'text-yellow-300');
+                }, 400);
+            }
+
+            closeRechargeModal();
+            showToast(`${inputVal.toLocaleString()}원 ${translations[currentLang]['pay_recharge_success']}`);
+        }
+
+        // ==================== [4. 토스트 안내 유틸리티 함수] ====================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            if (toast && toastMsg) {
+                toastMsg.textContent = message;
+                toast.classList.remove('opacity-0', 'pointer-events-none');
+                toast.classList.add('opacity-100');
+
+                // 이전 타이머 간섭 배제 및 닫기 예약
+                if (window.toastTimer) {
+                    clearTimeout(window.toastTimer);
+                }
+                window.toastTimer = setTimeout(() => {
+                    toast.classList.remove('opacity-100');
+                    toast.classList.add('opacity-0', 'pointer-events-none');
+                }, 2500);
+            }
+        }
+    </script>
+</body>
+</html>
